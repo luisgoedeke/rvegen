@@ -82,6 +82,14 @@ public:
         return _shapes;
     }
 
+    constexpr inline auto rve_type()const{
+        return _rve_type;
+    }
+
+    constexpr inline auto& rve_type(){
+        return _rve_type;
+    }
+
 private:
     template<typename _Generator>
     constexpr inline auto compute_single_circle(circle_input const& __input, _Generator& __random_generator);
@@ -89,6 +97,11 @@ private:
     template<typename _Generator>
     constexpr inline auto compute_single_circle_only_inside(circle_input const& __input, _Generator& __random_generator);
 
+    template<typename _Generator>
+    constexpr inline auto compute_single_circle_periodic(circle_input const& __input, _Generator& __random_generator);
+
+    template<typename _Generator>
+    constexpr inline auto compute_single_circle_nonperiodic(circle_input const& __input, _Generator& __random_generator);
 private:
     rveType _rve_type;
     size_type _dim;
@@ -115,9 +128,105 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_circle(circle
     if(_rve_type == rveType::OnlyInside){
         compute_single_circle_only_inside(__input, __random_generator);
     }else if(_rve_type == rveType::Periodic){
-
+        compute_single_circle_periodic(__input, __random_generator);
     }else if(_rve_type == rveType::NonPeriodic){
+        compute_single_circle_nonperiodic(__input, __random_generator);
+    }
+}
 
+template <typename _Distribution>
+template<typename _Generator>
+constexpr inline auto rve_generator<_Distribution>::compute_single_circle_nonperiodic(circle_input const& __input, _Generator& __random_generator){
+
+}
+
+template <typename _Distribution>
+template<typename _Generator>
+constexpr inline auto rve_generator<_Distribution>::compute_single_circle_periodic(circle_input const& __input, _Generator& __random_generator){
+    const value_type minR{__input.get_radius_min()}, maxR{__input.get_radius_max()};
+    const value_type volume_faction{__input.get_volume_fraction()};
+    _Distribution dis_radius(minR, maxR);
+    _Distribution dis_x(0, _box[0]);
+    _Distribution dis_y(0, _box[1]);
+
+    const value_type dx{_box[0]}, dy{_box[1]};
+
+    const value_type area{minR*minR*M_PI};
+    const size_type max_circles{static_cast<size_type>((dx*dy*volume_faction)/area)};
+
+    size_type iter{0};
+
+    _shapes.clear();
+    //reserve data for faster push back of new elements
+    _shapes.reserve(max_circles);
+
+    _vol_frac_inclusion = 0;
+    while (iter <= _max_iter) {
+        //new circle
+        const value_type radius{dis_radius(__random_generator)};
+        const value_type x{dis_x(__random_generator)};
+        const value_type y{dis_y(__random_generator)};
+        const circle<value_type> circle_(x, y, radius);
+
+        bool check_distance_{check_distance(_shapes, circle_)};
+        if(check_distance_ == false){
+            //check if outside of rve
+            bool check_distance_periodic{true};
+            bool is_outside{false};
+            //left side
+            if((circle_(0)-circle_.radius()) < 0){
+                is_outside = true;
+                const circle<value_type> circle_periodic(x+dx,y,radius);
+                check_distance_periodic = check_distance(_shapes, circle_periodic);
+                if(check_distance_periodic == false){
+                    _shapes.emplace_back(std::make_unique<circle<value_type>>(circle_periodic));
+                }
+            }
+            //right side
+            if(circle_(0)+circle_.radius()>dx){
+                is_outside = true;
+                const circle<value_type> circle_periodic(x-dx,y,radius);
+                check_distance_periodic = check_distance(_shapes, circle_periodic);
+                if(check_distance_periodic == false){
+                    _shapes.emplace_back(std::make_unique<circle<value_type>>(circle_periodic));
+                }
+            }
+            //bottom
+            if(circle_(1)-circle_.radius()<0){
+                is_outside = true;
+                const circle<value_type> circle_periodic(x,y+dy,radius);
+                check_distance_periodic = check_distance(_shapes, circle_periodic);
+                if(check_distance_periodic == false){
+                    _shapes.emplace_back(std::make_unique<circle<value_type>>(circle_periodic));
+                }
+            }
+            //top
+            if(circle_(1)+circle_.radius()>dy){
+                is_outside = true;
+                const circle<value_type> circle_periodic(x,y-dy,radius);
+                check_distance_periodic = check_distance(_shapes, circle_periodic);
+                if(check_distance_periodic == false){
+                    _shapes.emplace_back(std::make_unique<circle<value_type>>(circle_periodic));
+                }
+            }
+            if(check_distance_periodic == false || is_outside == false){
+                _shapes.emplace_back(std::make_unique<circle<value_type>>(circle_));
+                _vol_frac_inclusion += circle_.area();
+            }
+        }
+
+#ifdef RVE_DEBUG
+        std::cout<<"iter "<<iter<<" volume fraction "<<_vol_frac_inclusion<<" error "<<(volume_faction - (_vol_frac_inclusion/(_box[0]*_box[1])))<<std::endl;
+#endif
+
+        if((volume_faction - (_vol_frac_inclusion/(dx*dy))) < 0.005){
+            break;
+        }
+        ++iter;
+    }
+
+    if(iter == _max_iter){
+        throw std::runtime_error("max iterations reached");
     }
 }
 
@@ -149,7 +258,7 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_circle_only_i
         const auto y{dis_y(__random_generator)};
         const circle<value_type> circle_(x, y, radius);
 
-        if(!check_distance(_shapes, &circle_)){
+        if(!check_distance(_shapes, circle_)){
             _shapes.emplace_back(std::make_unique<circle<value_type>>(circle_));
             _vol_frac_inclusion += circle_.area();
         }

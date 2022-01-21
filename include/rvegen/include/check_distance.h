@@ -32,11 +32,11 @@ auto check_distance(ellipse<T> const& lhs, ellipse<T> const& rhs){
 
 
 template<template<class> class _PTR, typename _T>
-bool check_distance(std::vector<_PTR<shape_base<_T>>> const& __shapes, circle<_T> const*const __circle){
+bool check_distance(std::vector<_PTR<shape_base<_T>>> const& __shapes, circle<_T> const& __circle){
     for(auto& shape : __shapes){
         if(dynamic_cast<circle<_T>*>(shape.get())){
             //check distance
-            if(check_distance(*__circle, *static_cast<circle<_T>*>(shape.get()))){
+            if(check_distance(__circle, *static_cast<circle<_T>*>(shape.get()))){
                 //collision
                 return true;
             }
