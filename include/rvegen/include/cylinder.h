@@ -26,6 +26,8 @@ public:
         _height(height)
     {}
 
+    //copy constructor
+
     value_type operator()(const size_type idx)const{
         return _data[idx];
     }

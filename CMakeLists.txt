@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.5)
 
 project(rvegen LANGUAGES CXX)
 
-set(RVEGEN_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/rvegen)
-set(RVEGEN_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/rvegen/include)
+set(RVEGEN_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/rvegen)
+set(RVEGEN_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/rvegen/include)
 
 # Versionning
 # ===========
@@ -36,11 +36,15 @@ set(RVEGEN_HEADER
 )
 
 # add the library that runs
+if(${CMAKE_VERSION} VERSION_LESS "3.19.0")
+    add_library(${PROJECT_NAME} INTERFACE)
+else()
 add_library(${PROJECT_NAME} INTERFACE
     ${RVEGEN_BASE_DIR}/rvegen.h
     ${RVEGEN_BASE_DIR}/rvegen_config.h
     ${RVEGEN_HEADER}
     )
+endif()
 
 
 # add alias so the project can be uses with add_subdirectory
@@ -116,7 +120,7 @@ if(RVEGEN_INSTALL_LIBRARY)
                 "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
           DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/cmake)
 
-  install(DIRECTORY ${PROJECT_SOURCE_DIR}/rvegen/include
+  install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/rvegen
           DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 endif()
 
