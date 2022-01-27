@@ -17,7 +17,7 @@ namespace rvegen {
 
 enum rveType{
     Periodic,
-    NonPeriodic,
+    Random,
     OnlyInside,
 };
 
@@ -129,7 +129,7 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_circle(circle
         compute_single_circle_only_inside(__input, __random_generator);
     }else if(_rve_type == rveType::Periodic){
         compute_single_circle_periodic(__input, __random_generator);
-    }else if(_rve_type == rveType::NonPeriodic){
+    }else if(_rve_type == rveType::Random){
         compute_single_circle_nonperiodic(__input, __random_generator);
     }
 }
