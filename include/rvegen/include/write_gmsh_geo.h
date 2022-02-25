@@ -65,6 +65,39 @@ private:
 
     template<typename _RVE>
     inline void write_file_3D(std::fstream & __file, _RVE const& __rve){
+        const auto [x_box, y_box, z_box]{__rve.box()};
+        const auto& shapes{__rve.shapes()};
+
+        __file<<"SetFactory(\"OpenCASCADE\");"<<std::endl;
+        __file<<"Mesh.CharacteristicLengthMin = 0.05;"<<std::endl;
+        __file<<"Mesh.CharacteristicLengthMax = 0.1;"<<std::endl;
+        __file<<"Box(1) = {0, 0, 0,"<<x_box<<","<<y_box<<", "<<z_box<<"};"<<std::endl;
+
+        //Rectangle + 4 lines ???? idk...
+        size_type start = 2;
+
+        for(size_t i{0}; i<shapes.size(); ++i){
+            if(dynamic_cast<cylinder<value_typ>*>(shapes[i].get())){
+                const auto& data{*static_cast<cylinder<value_typ>*>(shapes[i].get())};
+                __file<<"Cylinder("<<start+i<<") = {"<<data(0)<<","<<data(1)<<","<<data(2)<<", 0, 0, "<<data.height()<<", "<<data.radius()<<", 2*Pi};"<<std::endl;
+            }
+        }
+/*
+       for(size_t i{0};i<shapes.size();++i){
+            __file<<"Curve Loop("<<i+2<<") = {"<<5+i<<"};"<<std::endl;
+        }
+        for(size_t i{0};i<shapes.size();++i){
+            __file<<"Plane Surface("<<i+2<<") = {"<<i+2<<"};"<<std::endl;
+        }
+*/
+        for(size_t i{0};i<shapes.size();++i){
+            __file<<"BooleanIntersection{ Volume{1}; }{ Volume{"<<i+2<<"}; Delete; }"<<std::endl;
+        }
+
+        for(size_t i{0};i<shapes.size();++i){
+            __file<<"BooleanDifference{ Volume{1}; Delete; }{ Volume{"<<i+2<<"}; }"<<std::endl;
+        }
+
 
     }
 };

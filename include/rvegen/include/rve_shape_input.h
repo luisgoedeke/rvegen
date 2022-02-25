@@ -109,5 +109,91 @@ private:
     value_type _min_radius;
     value_type _max_radius;
 };
+
+class cylinder_input : public rve_shape_input
+{
+public:
+    using value_type = double;
+
+    cylinder_input():
+        _random_radius(),
+        _random_height(),
+        _min_radius(),
+        _max_radius(),
+        _min_height(),
+        _max_height()
+    {}
+
+    cylinder_input(bool const __random_position, bool const __random_radius, bool const __random_height, value_type const _min_radius, value_type const _max_radius, value_type const _min_height, value_type const _max_height,value_type const __volume_fraction):
+         rve_shape_input(__volume_fraction, __random_position),
+         _random_radius(__random_radius),
+         _min_radius(_min_radius),
+         _max_radius(_max_radius),
+         _random_height(__random_height),
+         _min_height(_min_height),
+         _max_height(_max_height)
+    {}
+
+    ~cylinder_input(){}
+
+    inline auto set_random_radius(bool __val){
+        _random_radius = __val;
+    }
+
+    inline auto is_random_radius()const{
+        return _random_radius;
+    }
+
+    inline auto get_radius_min()const{
+        return _min_radius;
+    }
+
+    inline auto get_radius_max()const{
+        return _max_radius;
+    }
+
+    inline auto set_radius_min(double const __val){
+        _min_radius = __val;
+    }
+
+    inline auto set_radius_max(double const __val){
+        _max_radius = __val;
+    }
+
+    inline auto set_random_height(bool __val){
+        _random_height = __val;
+    }
+
+    inline auto is_random_height()const{
+        return _random_height;
+    }
+    inline auto get_height_min()const{
+        return _min_height;
+    }
+
+    inline auto get_height_max()const{
+        return _max_height;
+    }
+
+    inline auto set_height_min(double const __val){
+        _min_height = __val;
+    }
+
+    inline auto set_height_max(double const __val){
+        _max_height = __val;
+    }
+
+    virtual void print() const override{
+        std::cout<<"cylinder"<<std::endl;
+    }
+
+private:
+    bool _random_radius;
+    bool _random_height;
+    value_type _min_radius;
+    value_type _max_radius;
+    value_type _min_height;
+    value_type _max_height;
+};
 }
 #endif // RVE_SHAPE_INPUT_H
