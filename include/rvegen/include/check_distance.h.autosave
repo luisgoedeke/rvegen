@@ -13,20 +13,20 @@ namespace rvegen {
 template<typename T>
 auto check_distance(circle<T> const& lhs, circle<T> const& rhs){
     const auto a{lhs.radius() + rhs.radius()};
-    const double dx = lhs(0) - rhs(0);
-    const double dy = lhs(1) - rhs(1);
+    const auto dx = lhs(0) - rhs(0);
+    const auto dy = lhs(1) - rhs(1);
     return a * a > (dx * dx + dy * dy);
 }
 
 template<typename T>
 auto check_distance_flat(cylinder<T> const& lhs, cylinder<T> const& rhs){
     const auto a{lhs.radius() + rhs.radius()};
-    const double dx = lhs(0) - rhs(0);
-    const double dy = lhs(1) - rhs(1);
-    const double start_lhs = lhs(2);
-    const double end_lhs = lhs(2)+lhs.height();
-    const double start_rhs = rhs(2);
-    const double end_rhs = rhs(2)+rhs.height();
+    const auto dx = lhs(0) - rhs(0);
+    const auto dy = lhs(1) - rhs(1);
+    const auto start_lhs = lhs(2);
+    const auto end_lhs = lhs(2)+lhs.height();
+    const auto start_rhs = rhs(2);
+    const auto end_rhs = rhs(2)+rhs.height();
     if (a * a > (dx * dx + dy * dy)){
         return !((end_lhs < start_rhs)||start_lhs > end_rhs);
     }

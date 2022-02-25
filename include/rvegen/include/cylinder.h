@@ -15,13 +15,19 @@ public:
     using size_type = std::size_t;
 
     cylinder():
-        _data({0}),
+        _point({0}),
         _radius(0),
         _height(0)
     {}
-
+/* Mit 2 Koordianten behalten oder kann das weg?
     cylinder(const value_type x, const value_type y, const value_type radius, const value_type height):
-        _data({x,y}),
+        _point({x,y}),
+        _radius(radius),
+        _height(height)
+    {}
+*/
+    cylinder(const value_type x, const value_type y, const value_type z, const value_type radius, const value_type height):
+        _point({x,y,z}),
         _radius(radius),
         _height(height)
     {}
@@ -29,11 +35,11 @@ public:
     //copy constructor
 
     value_type operator()(const size_type idx)const{
-        return _data[idx];
+        return _point[idx];
     }
 
     value_type& operator()(const size_type idx){
-        return _data[idx];
+        return _point[idx];
     }
 
     value_type radius()const{
@@ -44,8 +50,20 @@ public:
         return _radius;
     }
 
+    value_type height()const{
+        return _height;
+    }
+
+    value_type& height(){
+        return _height;
+    }
+
     value_type area()const{
         return _radius*_radius*M_PI;
+    }
+
+    value_type volume() const {
+        return _radius*_radius*M_PI*_height;
     }
 
     //bsp function
@@ -53,7 +71,7 @@ public:
         std::cout<<"Hallo bin ein Cylinder"<<std::endl;
     }
 private:
-    std::array<value_type, 2> _data;
+    std::array<value_type, 3> _point;
     value_type _radius;
     value_type _height;
 };
