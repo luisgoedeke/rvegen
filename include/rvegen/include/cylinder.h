@@ -19,13 +19,7 @@ public:
         _radius(0),
         _height(0)
     {}
-/* Mit 2 Koordianten behalten oder kann das weg?
-    cylinder(const value_type x, const value_type y, const value_type radius, const value_type height):
-        _point({x,y}),
-        _radius(radius),
-        _height(height)
-    {}
-*/
+
     cylinder(const value_type x, const value_type y, const value_type z, const value_type radius, const value_type height):
         _point({x,y,z}),
         _radius(radius),
