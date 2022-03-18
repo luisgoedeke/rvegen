@@ -37,7 +37,7 @@ private:
         const auto& shapes{__rve.shapes()};
 
         __file<<"SetFactory(\"OpenCASCADE\");"<<std::endl;
-        __file<<"Rectangle(1) = {0, 0, 0,"<<x_box<<","<<y_box<<", 0};"<<std::endl;
+        __file<<"Rectangle(1) = {0, 0, 0, "<<x_box<<", "<<y_box<<", 0};"<<std::endl;
 
         //Rectangle + 4 lines ???? idk...
         size_type start = 5;
@@ -45,7 +45,15 @@ private:
         for(size_t i{0}; i<shapes.size(); ++i){
             if(dynamic_cast<circle<value_typ>*>(shapes[i].get())){
                 const auto& data{*static_cast<circle<value_typ>*>(shapes[i].get())};
-                __file<<"Circle("<<start+i<<") = {"<<data(0)<<","<<data(1)<<", 0,"<<data.radius()<<", 0, 2*Pi};"<<std::endl;
+                __file<<"Circle("<<start+i<<") = {"<<data(0)<<","<<data(1)<<", 0, "<<data.radius()<<", 0, 2*Pi};"<<std::endl;
+            }
+        }
+
+        for(size_t i{0}; i<shapes.size(); ++i){
+            if(dynamic_cast<ellipse<value_typ>*>(shapes[i].get())){
+                const auto& data{*static_cast<ellipse<value_typ>*>(shapes[i].get())};
+                __file<<"Ellipse("<<start+i<<") = {"<<data(0)<<","<<data(1)<<", 0, "<<data.radius_a()<<","<<data.radius_b()<<", 0, 2*Pi};"<<std::endl;
+                __file<<"Rotate {{0, 0, 1}, {"<<data(0)<<", "<<data(1)<<", 0}, "<<data.rotation()<<"*Pi} {Curve{"<<start+i<<"};}"<<std::endl;
             }
         }
 

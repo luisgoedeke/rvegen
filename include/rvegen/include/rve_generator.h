@@ -10,6 +10,7 @@
 
 #include "circle.h"
 #include "cylinder.h"
+#include "ellipse.h"
 #include "check_distance.h"
 #include "rve_shape_input.h"
 
@@ -41,7 +42,7 @@ public:
     rve_generator(rveType const __rve_type = rveType::OnlyInside, std::size_t const __dimension = 3, value_type const _x = 1, value_type const _y = 1, value_type const _z = 1):
         _rve_type(__rve_type),
         _dim(__dimension),
-        _max_iter(50000000000),
+        _max_iter(50000000),
         _vol_frac_inclusion(0),
         _box{_x,_y,_z}
     {}
@@ -60,6 +61,15 @@ public:
                 }
                 compute_single_circle(*static_cast<circle_input*>(__input[0].get()), __random_generator);
             }
+
+            else if(dynamic_cast<ellipse_input*>(__input[0].get())){
+                //check dimension
+                if(_dim != 2){
+                    throw std::runtime_error("no matching dimensions");
+                }
+                compute_single_ellipse(*static_cast<ellipse_input*>(__input[0].get()), __random_generator);
+            }
+
             else if (dynamic_cast<cylinder_input*>(__input[0].get())){
                 if (_dim !=3){
                    throw std::runtime_error("no matching dimensions");
@@ -110,6 +120,18 @@ private:
     constexpr inline auto compute_single_circle_random(circle_input const& __input, _Generator& __random_generator);
 
     template<typename _Generator>
+    constexpr inline auto compute_single_ellipse(ellipse_input const& __input, _Generator& __random_generator);
+
+    template<typename _Generator>
+    constexpr inline auto compute_single_ellipse_only_inside(ellipse_input const& __input, _Generator& __random_generator);
+
+    template<typename _Generator>
+    constexpr inline auto compute_single_ellipse_periodic(ellipse_input const& __input, _Generator& __random_generator);
+
+    template<typename _Generator>
+    constexpr inline auto compute_single_ellipse_random(ellipse_input const& __input, _Generator& __random_generator);
+
+    template<typename _Generator>
     constexpr inline auto compute_single_cylinder(cylinder_input const& __input, _Generator& __random_generator);
 
     template<typename _Generator>
@@ -150,6 +172,29 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_circle(circle
         compute_single_circle_periodic(__input, __random_generator);
     }else if(_rve_type == rveType::Random){
         compute_single_circle_random(__input, __random_generator);
+    }
+}
+
+template <typename _Distribution>
+template<typename _Generator>
+constexpr inline auto rve_generator<_Distribution>::compute_single_ellipse(ellipse_input const& __input, _Generator& __random_generator){
+
+#ifdef RVE_DEBUG
+    //print only in debug mode
+    //do some stuff
+    std::cout<<"Do some random ellipse stuff"<<std::endl;
+    std::cout<<"radius min a     "<<__input.get_radius_min_a()<<std::endl;
+    std::cout<<"radius max a     "<<__input.get_radius_max_a()<<std::endl;
+    std::cout<<"radius min b     "<<__input.get_radius_min_b()<<std::endl;
+    std::cout<<"radius max b     "<<__input.get_radius_max_b()<<std::endl;
+    std::cout<<"volume fraction "<<__input.get_volume_fraction()<<std::endl;
+#endif
+    if(_rve_type == rveType::OnlyInside){
+        compute_single_ellipse_only_inside(__input, __random_generator);
+    }else if(_rve_type == rveType::Periodic){
+        compute_single_ellipse_periodic(__input, __random_generator);
+    }else if(_rve_type == rveType::Random){
+        compute_single_ellipse_random(__input, __random_generator);
     }
 }
 
@@ -226,6 +271,62 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_circle_random
     if(iter == _max_iter){
         throw std::runtime_error("max iterations reached");
     }
+}
+
+template <typename _Distribution>
+template<typename _Generator>
+constexpr inline auto rve_generator<_Distribution>::compute_single_ellipse_random(ellipse_input const& __input, _Generator& __random_generator){
+    const value_type minRa{__input.get_radius_min_a()}, maxRa{__input.get_radius_max_a()}, minRb{__input.get_radius_min_b()}, maxRb{__input.get_radius_max_b()}, minRot{__input.get_min_rotation()}, maxRot{__input.get_max_rotation()};
+    const value_type volume_faction{__input.get_volume_fraction()};
+    _Distribution dis_radius_a(minRa, maxRa);
+    _Distribution dis_radius_b(minRb, maxRb);
+    _Distribution dis_rotation(minRot, maxRot);
+    _Distribution dis_x(0, _box[0]);
+    _Distribution dis_y(0, _box[1]);
+
+    size_type iter{0};
+    const value_type area{minRa*minRb*M_PI};
+    const size_type max_ellipses{static_cast<size_type>((_box[0]*_box[1]*volume_faction)/area)};
+
+    bool finished{false};
+
+
+    _shapes.clear();
+    //reserve data for faster push back of new elements
+    _shapes.reserve(max_ellipses);
+    iter = 0;
+    _vol_frac_inclusion = 0;
+    while (iter <= _max_iter) {
+        //new circle
+        const double radius_a{dis_radius_a(__random_generator)};
+        const double radius_b{dis_radius_b(__random_generator)};
+        const double rotation{dis_rotation(__random_generator)};
+        const auto x{dis_x(__random_generator)};
+        const auto y{dis_y(__random_generator)};
+        const ellipse<value_type> ellipse_(x, y, radius_a, radius_b, rotation);
+
+        if(!check_distance(_shapes, ellipse_)){
+            _shapes.emplace_back(std::make_unique<ellipse<value_type>>(ellipse_));
+            _vol_frac_inclusion += ellipse_.area();
+        }
+
+#ifdef RVE_DEBUG
+        std::cout<<"iter "<<iter<<" volume fraction "<<_vol_frac_inclusion<<" error "<<(volume_faction - (_vol_frac_inclusion/(_box[0]*_box[1])))<<std::endl;
+#endif
+
+        if((volume_faction - (_vol_frac_inclusion/(_box[0]*_box[1]))) < 0.005){
+            finished = true;
+            break;
+        }
+
+        ++iter;
+    }
+
+
+    if(iter == _max_iter){
+        throw std::runtime_error("max iterations reached");
+    }
+
 }
 
 template <typename _Distribution>
@@ -379,6 +480,100 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_circle_period
 
 template <typename _Distribution>
 template<typename _Generator>
+constexpr inline auto rve_generator<_Distribution>::compute_single_ellipse_periodic(ellipse_input const& __input, _Generator& __random_generator){
+    const value_type minRa{__input.get_radius_min_a()}, maxRa{__input.get_radius_max_a()}, minRb{__input.get_radius_min_b()}, maxRb{__input.get_radius_max_b()}, minRot{__input.get_min_rotation()}, maxRot{__input.get_max_rotation()};
+    const value_type volume_faction{__input.get_volume_fraction()};
+    _Distribution dis_radius_a(minRa, maxRa);
+    _Distribution dis_radius_b(minRb, maxRb);
+    _Distribution dis_rotation(minRot, maxRot);
+    _Distribution dis_x(0, _box[0]);
+    _Distribution dis_y(0, _box[1]);
+
+    const value_type dx{_box[0]}, dy{_box[1]};
+
+    const value_type area{minRa*minRb*M_PI};
+    const size_type max_ellipses{static_cast<size_type>((dx*dy*volume_faction)/area)};
+
+    size_type iter{0};
+
+    _shapes.clear();
+    //reserve data for faster push back of new elements
+    _shapes.reserve(max_ellipses);
+
+    _vol_frac_inclusion = 0;
+    while (iter <= _max_iter) {
+        //new circle
+        const value_type radius_a{dis_radius_a(__random_generator)};
+        const value_type radius_b{dis_radius_b(__random_generator)};
+        const value_type rotation{dis_rotation(__random_generator)};
+        const value_type x{dis_x(__random_generator)};
+        const value_type y{dis_y(__random_generator)};
+        const ellipse<value_type> ellipse_(x, y, radius_a, radius_b, rotation);
+
+        bool check_distance_{check_distance(_shapes, ellipse_)};
+        if(check_distance_ == false){
+            //check if outside of rve
+            bool check_distance_periodic{true};
+            bool is_outside{false};
+            //left side
+            if((ellipse_(0)-ellipse_.radius_a()) < 0){
+                is_outside = true;
+                const ellipse<value_type> ellipse_periodic(x+dx,y,radius_a, radius_b, rotation);
+                check_distance_periodic = check_distance(_shapes, ellipse_periodic);
+                if(check_distance_periodic == false){
+                    _shapes.emplace_back(std::make_unique<ellipse<value_type>>(ellipse_periodic));
+                }
+            }
+            //right side
+            if(ellipse_(0)+ellipse_.radius_a()>dx){
+                is_outside = true;
+                const ellipse<value_type> ellipse_periodic(x-dx,y,radius_a, radius_b, rotation);
+                check_distance_periodic = check_distance(_shapes, ellipse_periodic);
+                if(check_distance_periodic == false){
+                    _shapes.emplace_back(std::make_unique<ellipse<value_type>>(ellipse_periodic));
+                }
+            }
+            //bottom
+            if(ellipse_(1)-ellipse_.radius_a()<0){
+                is_outside = true;
+                const ellipse<value_type> ellipse_periodic(x,y+dy,radius_a, radius_b, rotation);
+                check_distance_periodic = check_distance(_shapes, ellipse_periodic);
+                if(check_distance_periodic == false){
+                    _shapes.emplace_back(std::make_unique<ellipse<value_type>>(ellipse_periodic));
+                }
+            }
+            //top
+            if(ellipse_(1)+ellipse_.radius_a()>dy){
+                is_outside = true;
+                const ellipse<value_type> ellipse_periodic(x,y-dy,radius_a, radius_b, rotation);
+                check_distance_periodic = check_distance(_shapes, ellipse_periodic);
+                if(check_distance_periodic == false){
+                    _shapes.emplace_back(std::make_unique<ellipse<value_type>>(ellipse_periodic));
+                }
+            }
+            if(check_distance_periodic == false || is_outside == false){
+                _shapes.emplace_back(std::make_unique<ellipse<value_type>>(ellipse_));
+                _vol_frac_inclusion += ellipse_.area();
+            }
+        }
+
+#ifdef RVE_DEBUG
+        std::cout<<"iter "<<iter<<" volume fraction "<<_vol_frac_inclusion<<" error "<<(volume_faction - (_vol_frac_inclusion/(_box[0]*_box[1])))<<std::endl;
+#endif
+
+        if((volume_faction - (_vol_frac_inclusion/(dx*dy))) < 0.005){
+            break;
+        }
+        ++iter;
+    }
+
+    if(iter == _max_iter){
+        throw std::runtime_error("max iterations reached");
+    }
+}
+
+template <typename _Distribution>
+template<typename _Generator>
 constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_periodic(cylinder_input const& __input, _Generator& __random_generator){
     const value_type minR{__input.get_radius_min()}, maxR{__input.get_radius_max()}, minH{__input.get_height_min()}, maxH{__input.get_height_max()};
     const value_type volume_faction{__input.get_volume_fraction()};
@@ -502,6 +697,48 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_peri
                  }
              }
 
+             //back
+             if(cylinder_(2)+cylinder_.height()<0){
+                 is_outside = true;
+                 const cylinder<value_type> cylinder_periodic(x,y,_box[2],radius,(height+z));
+                 check_distance_periodic = check_distance(_shapes, cylinder_periodic);
+                 if(check_distance_periodic == false){
+                     _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_periodic));
+                 }
+                 //back+left
+                 if(is_outside_left == true){
+                     const cylinder<value_type> cylinder_periodic(x+dx,y,0,radius,(height+z));
+                     check_distance_periodic = check_distance(_shapes, cylinder_periodic);
+                     if(check_distance_periodic == false){
+                         _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_periodic));
+                     }
+                 }
+                 //back+right
+                 if(is_outside_right == true){
+                     const cylinder<value_type> cylinder_periodic(x-dx,y,0,radius,(height+z));
+                     check_distance_periodic = check_distance(_shapes, cylinder_periodic);
+                     if(check_distance_periodic == false){
+                         _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_periodic));
+                     }
+                 }
+                 //back+bottom
+                 if(is_outside_bottom == true){
+                     const cylinder<value_type> cylinder_periodic(x,y+dy,0,radius,(height+z));
+                     check_distance_periodic = check_distance(_shapes, cylinder_periodic);
+                     if(check_distance_periodic == false){
+                         _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_periodic));
+                     }
+                 }
+                 //back+top
+                 if(is_outside_top == true){
+                     const cylinder<value_type> cylinder_periodic(x,y-dy,0,radius,(height+z));
+                     check_distance_periodic = check_distance(_shapes, cylinder_periodic);
+                     if(check_distance_periodic == false){
+                         _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_periodic));
+                     }
+                 }
+             }
+
             if(check_distance_periodic == false || is_outside == false){
                 _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_));
                 _vol_frac_inclusion += cylinder_.volume();
@@ -576,6 +813,61 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_circle_only_i
 
 template <typename _Distribution>
 template<typename _Generator>
+constexpr inline auto rve_generator<_Distribution>::compute_single_ellipse_only_inside(ellipse_input const& __input, _Generator& __random_generator){
+    const value_type minRa{__input.get_radius_min_a()}, maxRa{__input.get_radius_max_a()}, minRb{__input.get_radius_min_b()}, maxRb{__input.get_radius_max_b()}, minRot{__input.get_min_rotation()}, maxRot{__input.get_max_rotation()};
+    const value_type volume_faction{__input.get_volume_fraction()};
+    _Distribution dis_radius_a(minRa, maxRa);
+    _Distribution dis_radius_b(minRb, maxRb);
+    _Distribution dis_rotation(minRot, maxRot);
+    _Distribution dis_x(maxRa, _box[0]-maxRa);
+    _Distribution dis_y(maxRb, _box[1]-maxRa);
+
+    size_type iter{0};
+    const value_type area{minRa*minRb*M_PI};
+    const size_type max_ellipses{static_cast<size_type>((_box[0]*_box[1]*volume_faction)/area)};
+
+    bool finished{false};
+
+
+    _shapes.clear();
+    //reserve data for faster push back of new elements
+    _shapes.reserve(max_ellipses);
+    iter = 0;
+    _vol_frac_inclusion = 0;
+    while (iter <= _max_iter) {
+        //new ellipse
+        const double radius_a{dis_radius_a(__random_generator)};
+        const double radius_b{dis_radius_b(__random_generator)};
+        const double rotation{dis_rotation(__random_generator)};
+        const auto x{dis_x(__random_generator)};
+        const auto y{dis_y(__random_generator)};
+        const ellipse<value_type> ellipse_(x, y, radius_a, radius_b, rotation);
+
+        if(!check_distance(_shapes, ellipse_)){
+            _shapes.emplace_back(std::make_unique<ellipse<value_type>>(ellipse_));
+            _vol_frac_inclusion += ellipse_.area();
+        }
+
+#ifdef RVE_DEBUG
+        std::cout<<"iter "<<iter<<" volume fraction "<<_vol_frac_inclusion<<" error "<<(volume_faction - (_vol_frac_inclusion/(_box[0]*_box[1])))<<std::endl;
+#endif
+
+        if((volume_faction - (_vol_frac_inclusion/(_box[0]*_box[1]))) < 0.005){
+            finished = true;
+            break;
+        }
+
+        ++iter;
+    }
+
+
+    if(iter == _max_iter){
+        throw std::runtime_error("max iterations reached");
+    }
+}
+
+template <typename _Distribution>
+template<typename _Generator>
 constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_only_inside(cylinder_input const& __input, _Generator& __random_generator){
     const value_type minR{__input.get_radius_min()}, maxR{__input.get_radius_max()}, minH{__input.get_height_min()}, maxH{__input.get_height_max()};
     const value_type volume_faction{__input.get_volume_fraction()};
@@ -583,7 +875,7 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_only
     _Distribution dis_height(minH, maxH);
     _Distribution dis_x(maxR, (_box[0] - maxR));
     _Distribution dis_y(maxR, (_box[1] - maxR));
-    _Distribution dis_z(-_box[2], _box[2]);
+    _Distribution dis_z(0, _box[2]);
 
     const value_type dx{_box[0]}, dy{_box[1]}, dz{_box[2]};
 
@@ -611,7 +903,7 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_only
         const cylinder<value_type> cylinder_(x, y, z, radius, height);
 
 
-        if(!check_distance(_shapes, cylinder_)){
+        if((!check_distance(_shapes, cylinder_)) && (cylinder_.height() + cylinder_(2) < _box[2]) && (cylinder_(2) > 0)){
             _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_));
             _vol_frac_inclusion += cylinder_.volume();
         }
