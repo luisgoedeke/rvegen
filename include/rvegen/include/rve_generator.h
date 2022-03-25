@@ -42,7 +42,7 @@ public:
     rve_generator(rveType const __rve_type = rveType::OnlyInside, std::size_t const __dimension = 3, value_type const _x = 1, value_type const _y = 1, value_type const _z = 1):
         _rve_type(__rve_type),
         _dim(__dimension),
-        _max_iter(50000000),
+        _max_iter(500000),
         _vol_frac_inclusion(0),
         _box{_x,_y,_z}
     {}
@@ -196,6 +196,41 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_ellipse(ellip
     }else if(_rve_type == rveType::Random){
         compute_single_ellipse_random(__input, __random_generator);
     }
+}
+
+template<typename T>
+bool intersection (ellipse<T> const& e, T x1, T y1, T x2, T y2){
+
+    using value_type = T;
+
+    //Translation ins Koordinatensystem der Ellipse
+    value_type x1t = x1-e(0);
+    value_type y1t = y1-e(1);
+    value_type x2t = x2-e(0);
+    value_type y2t = y2-e(1);
+
+    //Rotation ins Koordinatensystem der Ellipse
+    value_type x1r = cos(e.rotation()*M_PI)*x1t+sin(e.rotation()*M_PI)*y1t;
+    value_type y1r = -sin(e.rotation()*M_PI)*x1t+cos(e.rotation()*M_PI)*y1t;
+    value_type x2r = cos(e.rotation()*M_PI)*x2t+sin(e.rotation()*M_PI)*y2t;
+    value_type y2r = -sin(e.rotation()*M_PI)*x2t+cos(e.rotation()*M_PI)*y2t;
+
+    value_type m = ((y2r-y1r)/(x2r-x1r));
+    value_type d = y1r-m*x1r;
+
+    value_type a = e.radius_a();
+    value_type b = e.radius_b();
+
+    //Prüfung ob Term unter Wurzel der p-q-Formel >= 0 ist => Schnittpunkte sind vorhanden
+
+    value_type p = (2*m*d*a*a)/(b*b+m*m*a*a);
+    value_type q = (a*a*d*d-a*a*b*b)/(b*b+m*m*a*a);
+
+    if (((p/2)*(p/2)-q) >=0){
+        return true;
+    }
+
+    return false;
 }
 
 template <typename _Distribution>
@@ -483,6 +518,8 @@ template<typename _Generator>
 constexpr inline auto rve_generator<_Distribution>::compute_single_ellipse_periodic(ellipse_input const& __input, _Generator& __random_generator){
     const value_type minRa{__input.get_radius_min_a()}, maxRa{__input.get_radius_max_a()}, minRb{__input.get_radius_min_b()}, maxRb{__input.get_radius_max_b()}, minRot{__input.get_min_rotation()}, maxRot{__input.get_max_rotation()};
     const value_type volume_faction{__input.get_volume_fraction()};
+
+
     _Distribution dis_radius_a(minRa, maxRa);
     _Distribution dis_radius_b(minRb, maxRb);
     _Distribution dis_rotation(minRot, maxRot);
@@ -516,7 +553,7 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_ellipse_perio
             bool check_distance_periodic{true};
             bool is_outside{false};
             //left side
-            if((ellipse_(0)-ellipse_.radius_a()) < 0){
+            if(intersection(ellipse_, 0.0, 0.0, 0.0, 1.0)){
                 is_outside = true;
                 const ellipse<value_type> ellipse_periodic(x+dx,y,radius_a, radius_b, rotation);
                 check_distance_periodic = check_distance(_shapes, ellipse_periodic);
@@ -525,7 +562,7 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_ellipse_perio
                 }
             }
             //right side
-            if(ellipse_(0)+ellipse_.radius_a()>dx){
+            if(intersection(ellipse_, 1.0, 0.0, 1.0, 1.0)){
                 is_outside = true;
                 const ellipse<value_type> ellipse_periodic(x-dx,y,radius_a, radius_b, rotation);
                 check_distance_periodic = check_distance(_shapes, ellipse_periodic);
@@ -534,7 +571,7 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_ellipse_perio
                 }
             }
             //bottom
-            if(ellipse_(1)-ellipse_.radius_a()<0){
+            if(intersection(ellipse_, 0.0, 0.0, 1.0, 0.0)){
                 is_outside = true;
                 const ellipse<value_type> ellipse_periodic(x,y+dy,radius_a, radius_b, rotation);
                 check_distance_periodic = check_distance(_shapes, ellipse_periodic);
@@ -543,7 +580,7 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_ellipse_perio
                 }
             }
             //top
-            if(ellipse_(1)+ellipse_.radius_a()>dy){
+            if(intersection(ellipse_, 0.0, 1.0, 1.0, 1.0)){
                 is_outside = true;
                 const ellipse<value_type> ellipse_periodic(x,y-dy,radius_a, radius_b, rotation);
                 check_distance_periodic = check_distance(_shapes, ellipse_periodic);

@@ -29,6 +29,7 @@ set(RVEGEN_HEADER
     ${RVEGEN_INCLUDE_DIR}/cylinder.h
     ${RVEGEN_INCLUDE_DIR}/circle.h
     ${RVEGEN_INCLUDE_DIR}/ellipse.h
+    ${RVEGEN_INCLUDE_DIR}/ellipsoid.h
     ${RVEGEN_INCLUDE_DIR}/rve_shape_input.h
     ${RVEGEN_INCLUDE_DIR}/write_gmsh_geo.h
     ${RVEGEN_INCLUDE_DIR}/check_distance.h

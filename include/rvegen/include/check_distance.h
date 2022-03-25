@@ -2,41 +2,219 @@
 #define CHECK_DISTANCE_H
 
 #include <vector>
+#include <iostream>
+#include <array>
 
 #include "circle.h"
 #include "cylinder.h"
 #include "ellipse.h"
-
+#include "ellipsoid.h"
 
 namespace rvegen {
+
+
 
 template<typename T>
 bool ellipsecontrol (ellipse<T> const& lhs, ellipse<T> const& rhs){
     using value_type = T;
 
-    int Anzahl{100};
-    value_type phi;
+    //Mittelpunkt
+    //Mittelpunkt von lhs im Koordinatensystem von rhs
+    value_type centerx = lhs(0)-rhs(0);
+    value_type centery = lhs(1)-rhs(1);
 
-    for (int i=1; i <= 100; i++){
-        phi = 2*M_PI*(i/100);
-        value_type r = (rhs.radius_b()*rhs.radius_b()/(rhs.radius_a()-rhs.focus()*cos(phi)));
+    //Rotation mit Winkel von rhs
+    value_type centerxrhs = cos(rhs.rotation()*M_PI)*centerx+sin(rhs.rotation()*M_PI)*centery;
+    value_type centeryrhs = -sin(rhs.rotation()*M_PI)*centerx+cos(rhs.rotation()*M_PI)*centery;
 
-        //Bestimmung der Koordinaten in Koordiantensystem mit Ursprung in dem linken Brennpunkt von rhs
-        value_type pointxrhs = cos(phi)*r;
-        value_type pointyrhs = sin(phi)*r;
+    value_type x = centerxrhs*centerxrhs;
+    value_type a = rhs.radius_a()*rhs.radius_a();
+    value_type y = centeryrhs*centeryrhs;
+    value_type b = rhs.radius_b()*rhs.radius_b();
 
-        //Umrechnung der Koordinaten in allgemeines Koordinatensystem
-        value_type pointx = cos(2*M_PI-rhs.rotation()*M_PI)*pointxrhs+sin(2*M_PI-rhs.rotation()*M_PI)*pointyrhs-rhs.focusp_l_x();
-        value_type pointy = -sin(2*M_PI-rhs.rotation()*M_PI)*pointxrhs+cos(2*M_PI-rhs.rotation()*M_PI)*pointyrhs-rhs.focusp_l_y();
 
-        //Umrechnung der Koordinaten in Koordinatensystem mit Ursprung im Schnittpunkt der Hauptachsen von lhs
-        value_type pointxlhs = cos(lhs.rotation()*M_PI)*pointx-sin(lhs.rotation()*M_PI)*pointy-lhs(0);
-        value_type pointylhs = sin(lhs.rotation()*M_PI)*pointx-cos(lhs.rotation()*M_PI)*pointy-lhs(1);
+    if ((x/a)+(y/b) <= 1){
+        return true;
+    }
 
-        if((pointxlhs*pointxlhs)/(lhs.radius_a()*lhs.radius_a())+(pointylhs*pointylhs)/(lhs.radius_b()*lhs.radius_b()) <= 1) {
+    //Mittelpunkt
+    //Mittelpunkt von rhs im Koordinatensystem von lhs
+    centerx = rhs(0)-lhs(0);
+    centery = rhs(1)-lhs(1);
+
+    //Rotation mit Winkel von lhs
+    centerxrhs = cos(lhs.rotation()*M_PI)*centerx+sin(lhs.rotation()*M_PI)*centery;
+    centeryrhs = -sin(lhs.rotation()*M_PI)*centerx+cos(lhs.rotation()*M_PI)*centery;
+
+    x = centerxrhs*centerxrhs;
+    a = lhs.radius_a()*lhs.radius_a();
+    y = centeryrhs*centeryrhs;
+    b = lhs.radius_b()*lhs.radius_b();
+
+
+    if ((x/a)+(y/b) <= 1){
+        return true;
+    }
+
+    for (int i=1; i <= 360; i++){
+        value_type const phi = M_PI*i*2/360;
+
+        //Bestimmung der Koordinaten im Koordiantensystem von lhs
+        value_type pointxrhs = (rhs(0)+rhs.radius_a()*cos(phi)*cos(rhs.rotation()*M_PI)-rhs.radius_b()*sin(phi)*sin(rhs.rotation()*M_PI))-lhs(0);
+        value_type pointyrhs = (rhs(1)+rhs.radius_a()*cos(phi)*sin(rhs.rotation()*M_PI)+rhs.radius_b()*sin(phi)*cos(rhs.rotation()*M_PI))-lhs(1);
+
+        //Umrechnung der Koordinaten um Drehwinkel von lhs
+        value_type pointxlhs = cos(lhs.rotation()*M_PI)*pointxrhs+sin(lhs.rotation()*M_PI)*pointyrhs;
+        value_type pointylhs = -sin(lhs.rotation()*M_PI)*pointxrhs+cos(lhs.rotation()*M_PI)*pointyrhs;
+
+        value_type x = pointxlhs*pointxlhs;
+        value_type a = lhs.radius_a()*lhs.radius_a();
+        value_type y = pointylhs*pointylhs;
+        value_type b = lhs.radius_b()*lhs.radius_b();
+
+
+        if (((x/a)+(y/b)) <= 1){
             return true;
         }
     }
+    return false;
+}
+
+template<typename T>
+bool rectanglecontrol (ellipse<T> const& lhs, ellipse<T> const& rhs){
+    using value_type = T;
+
+    //Mittelpunkt
+    //Mittelpunkt von lhs im Koordinatensystem von rhs
+    value_type centerx = lhs(0)-rhs(0);
+    value_type centery = lhs(1)-rhs(1);
+
+    //Rotation mit Winkel von rhs
+    value_type centerxrhs = cos(rhs.rotation()*M_PI)*centerx+sin(rhs.rotation()*M_PI)*centery;
+    value_type centeryrhs = -sin(rhs.rotation()*M_PI)*centerx+cos(rhs.rotation()*M_PI)*centery;
+
+    value_type x = centerxrhs*centerxrhs;
+    value_type a = rhs.radius_a()*rhs.radius_a();
+    value_type y = centeryrhs*centeryrhs;
+    value_type b = rhs.radius_b()*rhs.radius_b();
+
+
+    if ((x/a)+(y/b) <= 1){
+        return true;
+    }
+
+    //Mittelpunkt
+    //Mittelpunkt von rhs im Koordinatensystem von lhs
+    centerx = rhs(0)-lhs(0);
+    centery = rhs(1)-lhs(1);
+
+    //Rotation mit Winkel von lhs
+    centerxrhs = cos(lhs.rotation()*M_PI)*centerx+sin(lhs.rotation()*M_PI)*centery;
+    centeryrhs = -sin(lhs.rotation()*M_PI)*centerx+cos(lhs.rotation()*M_PI)*centery;
+
+    x = centerxrhs*centerxrhs;
+    a = lhs.radius_a()*lhs.radius_a();
+    y = centeryrhs*centeryrhs;
+    b = lhs.radius_b()*lhs.radius_b();
+
+
+    if ((x/a)+(y/b) <= 1){
+        return true;
+    }
+
+    value_type pointslhs[4][2];
+    value_type pointsrhs[4][2];
+
+    //lhs without rotation
+    pointslhs[0][0] = +lhs.radius_a();
+    pointslhs[0][1] = +lhs.radius_b();
+    pointslhs[1][0] = -lhs.radius_a();
+    pointslhs[1][1] = +lhs.radius_b();
+    pointslhs[2][0] = -lhs.radius_a();
+    pointslhs[2][1] = -lhs.radius_b();
+    pointslhs[3][0] = +lhs.radius_a();
+    pointslhs[3][1] = -lhs.radius_b();
+
+    //rhs without rotation
+    pointsrhs[0][0] = +rhs.radius_a();
+    pointsrhs[0][1] = +rhs.radius_b();
+    pointsrhs[1][0] = -rhs.radius_a();
+    pointsrhs[1][1] = +rhs.radius_b();
+    pointsrhs[2][0] = -rhs.radius_a();
+    pointsrhs[2][1] = -rhs.radius_b();
+    pointsrhs[3][0] = +rhs.radius_a();
+    pointsrhs[3][1] = -rhs.radius_b();
+
+    //rotation lhs
+
+    for (int i = 0; i <= 3; i++) {
+
+        value_type alpha = lhs.rotation()*M_PI;
+
+        value_type x = pointslhs[i][0];
+        value_type y = pointslhs[i][1];
+
+        pointslhs[i][0] = (x*cos(alpha)-y*sin(alpha))+lhs(0);
+        pointslhs[i][1] = (x*sin(alpha)+y*cos(alpha))+lhs(1);
+
+
+    }
+
+    for (int i = 0; i <= 3; i++) {
+
+        value_type alpha = rhs.rotation()*M_PI;
+
+        value_type x = pointsrhs[i][0];
+        value_type y = pointsrhs[i][1];
+
+        pointsrhs[i][0] = (x*cos(alpha)-y*sin(alpha))+rhs(0);
+        pointsrhs[i][1] = (x*sin(alpha)+y*cos(alpha))+rhs(1);
+
+    }
+
+    for (int i = 0; i <= 3; i++){
+
+        value_type x1 = pointslhs[i][0];
+        value_type y1 = pointslhs[i][1];
+        value_type x2 = pointslhs[i+1][0];
+        value_type y2 = pointslhs[i+1][1];
+
+        if (i ==3){
+            x2 = pointslhs[0][0];
+            y2 = pointslhs[0][1];
+        }
+
+        for (int j = 0; j <= 3; j++ ){
+
+
+            value_type x3 = pointsrhs[j][0];
+            value_type y3 = pointsrhs[j][1];
+            value_type x4 = pointsrhs[j+1][0];
+            value_type y4 = pointsrhs[j+1][1];
+
+            if (j ==3){
+                x4 = pointsrhs[0][0];
+                y4 = pointsrhs[0][1];
+            }
+
+            //y=mx+b
+
+
+            value_type m1 = ((y2-y1)/(x2-x1));
+            value_type m2 = ((y4-y3)/(x4-x3));
+
+            value_type b1 = y1-m1*x1;
+            value_type b2 = y3-m2*x3;
+
+            value_type xschnitt = (b2-b1)/(m1-m2);
+
+            if ((((xschnitt >= x1) && (xschnitt <= x2)) || ((xschnitt >= x2) && (xschnitt <= x1)))
+                    && (((xschnitt >= x3) && (xschnitt <= x4)) || ((xschnitt >= x4) && (xschnitt <= x3)))){
+                     return true;
+                }
+        }
+    }
+
     return false;
 }
 
@@ -65,27 +243,13 @@ auto check_distance(cylinder<T> const& lhs, cylinder<T> const& rhs){
 
 template<typename T>
 auto check_distance(ellipse<T> const& lhs, ellipse<T> const& rhs){
-    const auto a{lhs.radius_a() + rhs.radius_a()};
-    const auto b{lhs.radius_b() + rhs.radius_b()};
-    const double dx = (lhs(0) - rhs(0));
-    const double dy = (lhs(1) - rhs(1));
-    const double lhsx{lhs(0)};
-    const double lhsy{lhs(1)};
-    const double rhsx{rhs(0)};
-    const double rhsy{rhs(1)};
-    const double lhsvx{lhs.radius_a()*cos(lhs.rotation()*M_PI)};
-    const double lhsvy{lhs.radius_a()*sin(lhs.rotation()*M_PI)};
-    const double rhsvx{rhs.radius_a()*cos(rhs.rotation()*M_PI)};
-    const double rhsvy{rhs.radius_a()*sin(rhs.rotation()*M_PI)};
-    const double lhshw{lhs.radius_b()/lhs.radius_a()};
-    const double rhshw{rhs.radius_b()/rhs.radius_a()};
 
-    //if (a * a > (dx * dx + dy * dy)) {
-    //    return true;
-    //}
-    //else {
+    if (rectanglecontrol(lhs, rhs)) {
         return ellipsecontrol(lhs, rhs);
-    //};
+    }
+    else {
+        return false;
+    };
 }
 
 

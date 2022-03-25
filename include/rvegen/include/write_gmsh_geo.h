@@ -6,6 +6,7 @@
 #include "circle.h"
 #include "ellipse.h"
 #include "cylinder.h"
+#include "ellipsoid.h"
 
 namespace rvegen {
 
@@ -59,15 +60,18 @@ private:
 
 
         for(size_t i{0};i<shapes.size();++i){
-            __file<<"Curve Loop("<<i+2<<") = {"<<5+i<<"};"<<std::endl;
+            __file<<"Curve Loop("<<i+start<<") = {"<<start+i<<"};"<<std::endl;
         }
         for(size_t i{0};i<shapes.size();++i){
-            __file<<"Plane Surface("<<i+2<<") = {"<<i+2<<"};"<<std::endl;
+            __file<<"Plane Surface("<<i+start<<") = {"<<start+i<<"};"<<std::endl;
         }
 
         for(size_t i{0};i<shapes.size();++i){
-            __file<<"BooleanIntersection{ Surface{1}; }{ Surface{"<<i+2<<"}; Delete; }"<<std::endl;
-            __file<<"BooleanDifference{ Surface{1}; Delete; }{ Surface{"<<i+2<<"}; }"<<std::endl;
+            __file<<"BooleanIntersection{ Surface{1}; }{ Surface{"<<i+start<<"}; Delete; }"<<std::endl;
+        }
+
+        for(size_t i{0};i<shapes.size();++i){
+            __file<<"BooleanDifference{ Surface{1}; Delete; }{ Surface{"<<i+start<<"}; }"<<std::endl;
         }
     }
 
@@ -90,14 +94,12 @@ private:
                 __file<<"Cylinder("<<start+i<<") = {"<<data(0)<<","<<data(1)<<","<<data(2)<<", 0, 0, "<<data.height()<<", "<<data.radius()<<", 2*Pi};"<<std::endl;
             }
         }
-/*
-       for(size_t i{0};i<shapes.size();++i){
-            __file<<"Curve Loop("<<i+2<<") = {"<<5+i<<"};"<<std::endl;
+/*        for(size_t i{0};i<shapes.size();++i){
+            __file<<"Curve Loop("<<i+start<<") = {"<<i+2<<"};"<<std::endl;
         }
         for(size_t i{0};i<shapes.size();++i){
-            __file<<"Plane Surface("<<i+2<<") = {"<<i+2<<"};"<<std::endl;
-        }
-*/
+            __file<<"Plane Surface("<<i+start<<") = {"<<i+2<<"};"<<std::endl;
+        }*/
         for(size_t i{0};i<shapes.size();++i){
             __file<<"BooleanIntersection{ Volume{1}; }{ Volume{"<<i+2<<"}; Delete; }"<<std::endl;
         }
