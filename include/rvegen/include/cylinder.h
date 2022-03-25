@@ -1,8 +1,8 @@
 #ifndef CYLINDER_H
 #define CYLINDER_H
 
+#include <cstdlib>
 #include <math.h>
-
 #include "shape_base.h"
 
 namespace rvegen {
