@@ -252,6 +252,12 @@ auto check_distance(ellipse<T> const& lhs, ellipse<T> const& rhs){
     };
 }
 
+template<typename T>
+auto check_distance(ellipsoid<T> const& lhs, ellipsoid<T> const& rhs){
+
+    return false;
+}
+
 
 template<template<class> class _PTR, typename _T>
 bool check_distance(std::vector<_PTR<shape_base<_T>>> const& __shapes, circle<_T> const& __circle){
@@ -294,6 +300,21 @@ bool check_distance(std::vector<_PTR<shape_base<_T>>> const& __shapes, ellipse<_
     }
     return false;
 }
+
+template<template<class> class _PTR, typename _T>
+bool check_distance(std::vector<_PTR<shape_base<_T>>> const& __shapes, ellipsoid<_T> const& __ellipsoid){
+    for(auto& shape : __shapes){
+        if(dynamic_cast<ellipsoid<_T>*>(shape.get())){
+            //check distance
+            if(check_distance(__ellipsoid, *static_cast<ellipsoid<_T>*>(shape.get()))){
+                //collision
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 
 
 //template<typename T>
