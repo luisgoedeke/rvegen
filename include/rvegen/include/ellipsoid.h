@@ -19,24 +19,22 @@ public:
         _radius_a(0),
         _radius_b(0),
         _radius_c(0),
-        _rotation(0),
-        _focus{0},
-        _focusp_l({0,0}),
-        _focusp_r({0,0})
+        _rotation_x(0),
+        _rotation_y(0),
+        _rotation_z(0)
 
 
 
     {}
 
-    ellipsoid(const value_type x, const value_type y, const value_type z, const value_type radius_a, const value_type radius_b, const value_type radius_c, const value_type rotation):
+    ellipsoid(const value_type x, const value_type y, const value_type z, const value_type radius_a, const value_type radius_b, const value_type radius_c, const value_type rotation_x, const value_type rotation_y, const value_type rotation_z):
         _point({x,y,z}),
         _radius_a(radius_a),
         _radius_b(radius_b),
         _radius_c(radius_c),
-        _rotation(rotation),
-        _focus{sqrt((radius_a*radius_a)-(radius_b*radius_b))},
-        _focusp_l({(_point[0]-cos(_rotation*M_PI)*_focus),(_point[1]-sin(_rotation*M_PI)*_focus)}),
-        _focusp_r({(_point[0]+cos(_rotation*M_PI)*_focus),(_point[1]+sin(_rotation*M_PI)*_focus)})
+        _rotation_x(rotation_x),
+        _rotation_y(rotation_y),
+        _rotation_z(rotation_z)
     {}
 
     //copy constructor
@@ -74,74 +72,36 @@ public:
         return _radius_c;
     }
 
-    value_type rotation()const{
-        return _rotation;
+    value_type rotation_x()const{
+        return _rotation_x;
     }
 
-    value_type& rotation(){
-        return _rotation;
+    value_type& rotation_x(){
+        return _rotation_x;
     }
 
-    value_type focus()const{
-        return _focus;
+    value_type rotation_y()const{
+        return _rotation_y;
     }
 
-    value_type& focus(){
-        return _focus;
+    value_type& rotation_y(){
+        return _rotation_y;
     }
 
-    value_type focusp_l_x()const{
-        return _focusp_l[0];
+    value_type rotation_z()const{
+        return _rotation_z;
     }
 
-    value_type& focusp_l_x(){
-        return _focusp_l[0];
+    value_type& rotation_z(){
+        return _rotation_z;
     }
 
-    value_type focusp_l_y()const{
-        return _focusp_l[1];
+    value_type area()const{
+        return _radius_a*_radius_b*M_PI;
     }
 
-    value_type& focusp_l_y(){
-        return _focusp_l[1];
-    }
-
-    value_type focusp_l_z()const{
-        return _focusp_l[2];
-    }
-
-    value_type& focusp_l_z(){
-        return _focusp_l[2];
-    }
-
-    value_type focusp_r_x()const{
-        return _focusp_r[0];
-    }
-
-    value_type& focusp_r_x(){
-        return _focusp_r[0];
-    }
-
-    value_type focusp_r_y()const{
-        return _focusp_r[1];
-    }
-
-    value_type& focusp_r_y(){
-        return _focusp_r[1];
-    }
-
-    value_type focusp_r_z()const{
-        return _focusp_r[2];
-    }
-
-    value_type& focusp_r_z(){
-        return _focusp_r[2];
-    }
-
-
-
-    virtual value_type volume()const override{
-        return 4/3*_radius_a*_radius_b*_radius_c*M_PI;
+    value_type volume()const{
+        return (4/3*_radius_a*_radius_b*_radius_c*M_PI);
     }
 
     //bsp function
@@ -154,11 +114,9 @@ private:
     value_type _radius_a; // in x direction
     value_type _radius_b; // in y direction
     value_type _radius_c; // in z direction
-    value_type _rotation;
-    value_type _focus;
-    std::array<value_type, 3> _focusp_l; //left focus if rotation is 0
-    std::array<value_type, 3> _focusp_r; //right focus if rotation is 0
-
+    value_type _rotation_x;
+    value_type _rotation_y;
+    value_type _rotation_z;
 };
 }
 #endif // ELLIPSOID_H

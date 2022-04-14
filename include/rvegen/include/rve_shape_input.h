@@ -195,7 +195,7 @@ public:
     }
 
     virtual void print() const override{
-        std::cout<<"circle"<<std::endl;
+        std::cout<<"ellipse"<<std::endl;
     }
 
 private:
@@ -293,6 +293,172 @@ private:
     value_type _max_radius;
     value_type _min_height;
     value_type _max_height;
+};
+
+class ellipsoid_input : public rve_shape_input
+{
+public:
+    using value_type = double;
+
+    ellipsoid_input():
+        _random_radius(),
+        _min_radius_a(),
+        _max_radius_a(),
+        _min_radius_b(),
+        _max_radius_b(),
+        _min_radius_c(),
+        _max_radius_c(),
+        _min_rotation_x(),
+        _max_rotation_x(),
+        _min_rotation_y(),
+        _max_rotation_y(),
+        _min_rotation_z(),
+        _max_rotation_z()
+
+    {}
+
+    ellipsoid_input(bool const __random_position, bool const __random_radius, value_type const _min_radius_a, value_type const _max_radius_a, value_type const _min_radius_b, value_type const _max_radius_b, value_type const _min_radius_c, value_type const _max_radius_c, value_type const _min_rotation_x, value_type const _max_rotation_x, value_type const _min_rotation_y, value_type const _max_rotation_y, value_type const _min_rotation_z, value_type const _max_rotation_z,  value_type const __volume_fraction):
+        rve_shape_input(__volume_fraction, __random_position),
+        _random_radius(__random_radius),
+        _min_radius_a(_min_radius_a),
+        _max_radius_a(_max_radius_a),
+        _min_radius_b(_min_radius_b),
+        _max_radius_b(_max_radius_b),
+        _min_radius_c(_min_radius_c),
+        _max_radius_c(_max_radius_c),
+        _min_rotation_x(_min_rotation_x),
+        _max_rotation_x(_max_rotation_x),
+        _min_rotation_y(_min_rotation_y),
+        _max_rotation_y(_max_rotation_y),
+        _min_rotation_z(_min_rotation_z),
+        _max_rotation_z(_max_rotation_z)
+    {}
+
+    ~ellipsoid_input(){}
+
+    inline auto set_random_radius(bool __val){
+        _random_radius = __val;
+    }
+
+    inline auto is_random_radius()const{
+        return _random_radius;
+    }
+
+    inline auto get_radius_min_a()const{
+        return _min_radius_a;
+    }
+
+    inline auto get_radius_max_a()const{
+        return _max_radius_a;
+    }
+
+    inline auto get_radius_min_b()const{
+        return _min_radius_b;
+    }
+
+    inline auto get_radius_max_b()const{
+        return _max_radius_b;
+    }
+
+    inline auto get_radius_min_c()const{
+        return _min_radius_c;
+    }
+
+    inline auto get_radius_max_c()const{
+        return _max_radius_c;
+    }
+
+    inline auto get_min_rotation_x()const{
+        return _min_rotation_x;
+    }
+
+    inline auto get_max_rotation_x()const{
+        return _max_rotation_x;
+    }
+
+    inline auto get_min_rotation_y()const{
+        return _min_rotation_y;
+    }
+
+    inline auto get_max_rotation_y()const{
+        return _max_rotation_y;
+    }
+
+    inline auto get_min_rotation_z()const{
+        return _min_rotation_z;
+    }
+
+    inline auto get_max_rotation_z()const{
+        return _max_rotation_z;
+    }
+
+    inline auto set_radius_min_a(double const __val){
+        _min_radius_a = __val;
+    }
+
+    inline auto set_radius_max_a(double const __val){
+        _max_radius_a = __val;
+    }
+
+    inline auto set_radius_min_b(double const __val){
+        _min_radius_b = __val;
+    }
+
+    inline auto set_radius_max_b(double const __val){
+        _max_radius_b = __val;
+    }
+
+    inline auto set_radius_min_c(double const __val){
+        _min_radius_c = __val;
+    }
+
+    inline auto set_radius_max_c(double const __val){
+        _max_radius_c = __val;
+    }
+
+    inline auto set_min_rotation_x(double const __val){
+        _min_rotation_x = __val;
+    }
+
+    inline auto set_max_rotation_x(double const __val){
+        _max_rotation_x = __val;
+    }
+
+    inline auto set_min_rotation_y(double const __val){
+        _min_rotation_y = __val;
+    }
+
+    inline auto set_max_rotation_y(double const __val){
+        _max_rotation_y = __val;
+    }
+
+    inline auto set_min_rotation_z(double const __val){
+        _min_rotation_z = __val;
+    }
+
+    inline auto set_max_rotation_z(double const __val){
+        _max_rotation_z = __val;
+    }
+
+    virtual void print() const override{
+        std::cout<<"ellipsoid"<<std::endl;
+    }
+
+private:
+    bool _random_radius;
+    value_type _min_radius_a;
+    value_type _max_radius_a;
+    value_type _min_radius_b;
+    value_type _max_radius_b;
+    value_type _min_radius_c;
+    value_type _max_radius_c;
+    value_type _min_rotation_x;
+    value_type _max_rotation_x;
+    value_type _min_rotation_y;
+    value_type _max_rotation_y;
+    value_type _min_rotation_z;
+    value_type _max_rotation_z;
+
 };
 }
 #endif // RVE_SHAPE_INPUT_H
