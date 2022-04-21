@@ -83,7 +83,7 @@ private:
         __file<<"SetFactory(\"OpenCASCADE\");"<<std::endl;
         __file<<"Mesh.CharacteristicLengthMin = 0;"<<std::endl;
         __file<<"Mesh.CharacteristicLengthMax = 0.05;"<<std::endl;
-        __file<<"Box(1) = {0, 0, 0,"<<x_box<<","<<y_box<<", "<<z_box<<"};"<<std::endl;
+//        __file<<"Box(1) = {0, 0, 0,"<<x_box<<","<<y_box<<", "<<z_box<<"};"<<std::endl;
 
         //Rectangle + 4 lines ???? idk...
         size_type start = 2;
@@ -98,9 +98,9 @@ private:
                 const auto& data{*static_cast<ellipsoid<value_typ>*>(shapes[i].get())};
                 __file<<"Sphere("<<start+i<<") = {0, 0, 0, 1};"<<std::endl;
                 __file<<"Dilate{{0, 0, 0}, {"<<data.radius_a()<<", "<<data.radius_b()<<", "<<data.radius_c()<<"}} {Volume{"<<start+i<<"};}"<<std::endl;
-                __file<<"Rotate {{1, 0, 0}, {0, 0, 0}, "<<data.rotation_x()<<"*Pi} {Volume{"<<start+i<<"};}"<<std::endl;
-                __file<<"Rotate {{0, 1, 0}, {0, 0, 0}, "<<data.rotation_y()<<"*Pi} {Volume{"<<start+i<<"};}"<<std::endl;
-                __file<<"Rotate {{0, 0, 1}, {0, 0, 0}, "<<data.rotation_z()<<"*Pi} {Volume{"<<start+i<<"};}"<<std::endl;
+                __file<<"Rotate {{1, 0, 0}, {0, 0, 0}, "<<data.rotation_x()<<"*2*Pi} {Volume{"<<start+i<<"};}"<<std::endl;
+                __file<<"Rotate {{0, 1, 0}, {0, 0, 0}, "<<data.rotation_y()<<"*2*Pi} {Volume{"<<start+i<<"};}"<<std::endl;
+                __file<<"Rotate {{0, 0, 1}, {0, 0, 0}, "<<data.rotation_z()<<"*2*Pi} {Volume{"<<start+i<<"};}"<<std::endl;
                 __file<<"Translate{"<<data(0)<<", "<<data(1)<<", "<<data(2)<<"} {Volume{"<<start+i<<"};}"<<std::endl;
 
             }
