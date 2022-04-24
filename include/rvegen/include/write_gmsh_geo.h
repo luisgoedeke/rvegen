@@ -73,6 +73,10 @@ private:
         for(size_t i{0};i<shapes.size();++i){
             __file<<"BooleanDifference{ Surface{1}; Delete; }{ Surface{"<<i+start<<"}; }"<<std::endl;
         }
+
+        for(size_t i{0};i<shapes.size();++i){
+            __file<<"BooleanDifference{ Surface{1}; Delete; }{ Surface{"<<i+start<<"}; }"<<std::endl;
+        }
     }
 
     template<typename _RVE>
