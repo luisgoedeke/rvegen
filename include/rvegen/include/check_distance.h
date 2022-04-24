@@ -41,14 +41,14 @@ void vectorrotation3d (T v[], T rotation, int axis) {
     }
 }
 
-template<typename T>
+/*template<typename T>
 void vectortranslation3d (T v[], T x, T y, T z) {
 
     v[0] = v[0]+x;
     v[1] = v[1]+y;
     v[2] = v[2]+z;
 }
-
+*/
 
 template<typename T>
 bool ellipsecontrol (ellipse<T> const& lhs, ellipse<T> const& rhs){
@@ -325,56 +325,29 @@ bool ellipsoidcontrol (ellipsoid<T> const& lhs, ellipsoid<T> const& rhs){
         return true;
     }
 
-    value_type f0[3] = {rhs(0), rhs(1), rhs(2)};
+    value_type f0[3] = {rhs(0)-lhs(0), rhs(1)-lhs(1), rhs(2)-lhs(2)};
     value_type f1[3] = {rhs.radius_a(), 0, 0};
     value_type f2[3] = {0, rhs.radius_b(), 0};
     value_type f3[3] = {0, 0, rhs.radius_c()};
 
-    //Vektoren rotieren im globalen Ursprung
+    //Vektoren rotieren in Koordinatensystem von lhs
     //x-Achse
-    vectorrotation3d(f1, rhs.rotation_x(), 0);
-    vectorrotation3d(f2, rhs.rotation_x(), 0);
-    vectorrotation3d(f3, rhs.rotation_x(), 0);
+    vectorrotation3d(f0, rhs.rotation_x()-lhs.rotation_x(), 0);
+    vectorrotation3d(f1, rhs.rotation_x()-lhs.rotation_x(), 0);
+    vectorrotation3d(f2, rhs.rotation_x()-lhs.rotation_x(), 0);
+    vectorrotation3d(f3, rhs.rotation_x()-lhs.rotation_x(), 0);
 
     //y-Achse
-    vectorrotation3d(f1, rhs.rotation_y(), 1);
-    vectorrotation3d(f2, rhs.rotation_y(), 1);
-    vectorrotation3d(f3, rhs.rotation_y(), 1);
+    vectorrotation3d(f0, rhs.rotation_y()-lhs.rotation_y(), 1);
+    vectorrotation3d(f1, rhs.rotation_y()-lhs.rotation_y(), 1);
+    vectorrotation3d(f2, rhs.rotation_y()-lhs.rotation_y(), 1);
+    vectorrotation3d(f3, rhs.rotation_y()-lhs.rotation_y(), 1);
 
     //z-Achse
-    vectorrotation3d(f1, rhs.rotation_z(), 2);
-    vectorrotation3d(f2, rhs.rotation_z(), 2);
-    vectorrotation3d(f3, rhs.rotation_z(), 2);
-
-    //Translation der Vektoren von rhs in das Koordinatensystem von rhs
-    vectortranslation3d(f1, rhs(0), rhs(1), rhs(2));
-    vectortranslation3d(f2, rhs(0), rhs(1), rhs(2));
-    vectortranslation3d(f3, rhs(0), rhs(1), rhs(2));
-
-    //Translation der Vektoren von rhs in das Koordinatensystem von lhs
-    vectortranslation3d(f0, -lhs(0), -lhs(1), -lhs(2));
-    vectortranslation3d(f1, -lhs(0), -lhs(1), -lhs(2));
-    vectortranslation3d(f2, -lhs(0), -lhs(1), -lhs(2));
-    vectortranslation3d(f3, -lhs(0), -lhs(1), -lhs(2));
-
-    //Vektoren rotieren im Ursprung von lhs
-    //x-Achse
-    vectorrotation3d(f0, lhs.rotation_x(), 0);
-    vectorrotation3d(f1, lhs.rotation_x(), 0);
-    vectorrotation3d(f2, lhs.rotation_x(), 0);
-    vectorrotation3d(f3, lhs.rotation_x(), 0);
-
-    //y-Achse
-    vectorrotation3d(f0, lhs.rotation_y(), 1);
-    vectorrotation3d(f1, lhs.rotation_y(), 1);
-    vectorrotation3d(f2, lhs.rotation_y(), 1);
-    vectorrotation3d(f3, lhs.rotation_y(), 1);
-
-    //z-Achse
-    vectorrotation3d(f0, lhs.rotation_z(), 2);
-    vectorrotation3d(f1, lhs.rotation_z(), 2);
-    vectorrotation3d(f2, lhs.rotation_z(), 2);
-    vectorrotation3d(f3, lhs.rotation_z(), 2);
+    vectorrotation3d(f0, rhs.rotation_z()-lhs.rotation_z(), 2);
+    vectorrotation3d(f1, rhs.rotation_z()-lhs.rotation_z(), 2);
+    vectorrotation3d(f2, rhs.rotation_z()-lhs.rotation_z(), 2);
+    vectorrotation3d(f3, rhs.rotation_z()-lhs.rotation_z(), 2);
 
     value_type phi;
     value_type theta;
@@ -383,16 +356,17 @@ bool ellipsoidcontrol (ellipsoid<T> const& lhs, ellipsoid<T> const& rhs){
         for (int j=-90; j<= 90; j++) {
 
             phi = i*2*M_PI/360;
-            theta = j*2*M_PI/360;
+            theta = j*M_PI_4/90;
 
-            x = (f0[0]+f1[0]*cos(theta)*cos(phi)+f2[0]*cos(theta)*sin(phi)+f3[0]*sin(theta))*(f0[0]+f1[0]*cos(theta)*cos(phi)+f2[0]*cos(theta)*sin(phi)+f3[0]*sin(theta));
+            x = ((f0[0]+f1[0]*cos(theta)*cos(phi)+f2[0]*cos(theta)*sin(phi)+f3[0]*sin(theta))*(f0[0]+f1[0]*cos(theta)*cos(phi)+f2[0]*cos(theta)*sin(phi)+f3[0]*sin(theta)));
             a = lhs.radius_a()*lhs.radius_a();
-            y = (f0[1]+f1[1]*cos(theta)*cos(phi)+f2[1]*cos(theta)*sin(phi)+f3[1]*sin(theta))*(f0[1]+f1[1]*cos(theta)*cos(phi)+f2[1]*cos(theta)*sin(phi)+f3[1]*sin(theta));
+            y = ((f0[1]+f1[1]*cos(theta)*cos(phi)+f2[1]*cos(theta)*sin(phi)+f3[1]*sin(theta))*(f0[1]+f1[1]*cos(theta)*cos(phi)+f2[1]*cos(theta)*sin(phi)+f3[1]*sin(theta)));
             b = lhs.radius_b()*lhs.radius_b();
-            z = (f0[2]+f1[2]*cos(theta)*cos(phi)+f2[2]*cos(theta)*sin(phi)+f3[2]*sin(theta))*(f0[2]+f1[2]*cos(theta)*cos(phi)+f2[2]*cos(theta)*sin(phi)+f3[2]*sin(theta));
+            z = ((f0[2]+f1[2]*cos(theta)*cos(phi)+f2[2]*cos(theta)*sin(phi)+f3[2]*sin(theta))*(f0[2]+f1[2]*cos(theta)*cos(phi)+f2[2]*cos(theta)*sin(phi)+f3[2]*sin(theta)));
             c = lhs.radius_c()*lhs.radius_c();
 
             if (((x/a)+(y/b)+(z/c)) <= 1){
+                std::cout<<"Kollision"<<std::endl;
                 return true;
             };
 
