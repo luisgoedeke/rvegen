@@ -330,22 +330,6 @@ bool ellipsoidcontrol (ellipsoid<T> const& lhs, ellipsoid<T> const& rhs){
     value_type f2[3] = {0, rhs.radius_b(), 0};
     value_type f3[3] = {0, 0, rhs.radius_c()};
 
-    //Vektoren rotieren im globalen Ursprung
-    //x-Achse /*
-/*    vectorrotation3d(f1, rhs.rotation_x(), 0);
-    vectorrotation3d(f2, rhs.rotation_x(), 0);
-    vectorrotation3d(f3, rhs.rotation_x(), 0);
-
-    //y-Achse
-    vectorrotation3d(f1, rhs.rotation_y(), 1);
-    vectorrotation3d(f2, rhs.rotation_y(), 1);
-    vectorrotation3d(f3, rhs.rotation_y(), 1);
-
-    //z-Achse
-    vectorrotation3d(f1, rhs.rotation_z(), 2);
-    vectorrotation3d(f2, rhs.rotation_z(), 2);
-    vectorrotation3d(f3, rhs.rotation_z(), 2);
-*/
     //Vektoren rotieren in Koordinatensystem von lhs
     //x-Achse
     vectorrotation3d(f0, rhs.rotation_x()-lhs.rotation_x(), 0);
