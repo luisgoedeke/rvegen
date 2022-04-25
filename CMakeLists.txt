@@ -34,6 +34,11 @@ set(RVEGEN_HEADER
     ${RVEGEN_INCLUDE_DIR}/write_gmsh_geo.h
     ${RVEGEN_INCLUDE_DIR}/check_distance.h
     ${RVEGEN_INCLUDE_DIR}/rve_generator.h
+    ${RVEGEN_INCLUDE_DIR}/bounding_box_base.h
+    ${RVEGEN_INCLUDE_DIR}/rectangle_bounding.h
+    ${RVEGEN_INCLUDE_DIR}/box.h
+    ${RVEGEN_INCLUDE_DIR}/sphere.h
+    ${RVEGEN_INCLUDE_DIR}/box_bounding.h
 )
 
 # add the library that runs

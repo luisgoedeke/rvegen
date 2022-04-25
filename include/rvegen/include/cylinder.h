@@ -26,7 +26,13 @@ public:
         _height(height)
     {}
 
-    //copy constructor
+    cylinder(cylinder const& __data):
+        _point(__data._point),
+        _radius(__data._radius),
+        _height(__data._height)
+    {}
+
+    virtual ~cylinder(){}
 
     value_type operator()(const size_type idx)const{
         return _point[idx];
@@ -60,9 +66,8 @@ public:
         return _radius*_radius*M_PI*_height;
     }
 
-    //bsp function
-    virtual void print() const override {
-        std::cout<<"Hallo bin ein Cylinder"<<std::endl;
+    virtual void make_bounding_box()override{
+
     }
 private:
     std::array<value_type, 3> _point;

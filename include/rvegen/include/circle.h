@@ -29,6 +29,8 @@ public:
         _radius(__circle._radius)
     {}
 
+    virtual ~circle(){}
+
     value_type operator()(const size_type idx)const{
         return _point[idx];
     }
@@ -49,11 +51,9 @@ public:
         return _radius*_radius*M_PI;
     }
 
-    //bsp function
-    virtual void print() const override {
-        std::cout<<"Hallo bin ein Kreis"<<std::endl;
-    }
+    virtual void make_bounding_box()override{
 
+    }
 
 private:
     std::array<value_type, 2> _point;

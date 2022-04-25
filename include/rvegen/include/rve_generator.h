@@ -14,6 +14,7 @@
 #include "ellipsoid.h"
 #include "check_distance.h"
 #include "rve_shape_input.h"
+#include "write_gmsh_geo.h"
 
 namespace rvegen {
 
@@ -358,7 +359,6 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_circle_random
             finished = true;
             break;
         }
-
         ++iter;
     }
 
@@ -398,11 +398,21 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_ellipse_rando
         const double rotation{dis_rotation(__random_generator)};
         const auto x{dis_x(__random_generator)};
         const auto y{dis_y(__random_generator)};
-        const ellipse<value_type> ellipse_(x, y, radius_a, radius_b, rotation);
+        ellipse<value_type> ellipse_(x, y, radius_a, radius_b, rotation);
+        ellipse_.make_bounding_box();
 
         if(!check_distance(_shapes, ellipse_)){
             _shapes.emplace_back(std::make_unique<ellipse<value_type>>(ellipse_));
             _vol_frac_inclusion += ellipse_.area();
+            _shapes.back().get()->make_bounding_box();
+
+#ifdef RVE_DEBUG
+            std::fstream test_bsp;
+            test_bsp.open("test_bsp_" + std::to_string(iter) + ".geo",std::ios::out);
+            write_gmsh_geo<double> gmsh;
+            gmsh.write_file(test_bsp, *this);
+            gmsh.write_bounding_boxes(test_bsp, *this);
+#endif
         }
 
 #ifdef RVE_DEBUG
@@ -512,39 +522,46 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_ellipsoid_ran
     _vol_frac_inclusion = 0;
     while (iter <= _max_iter) {
         //new circle
-        const double radius_a{dis_radius_a(__random_generator)};
-        const double radius_b{dis_radius_b(__random_generator)};
-        const double radius_c{dis_radius_c(__random_generator)};
-        const double rotation_x{dis_rotation_x(__random_generator)};
-        const double rotation_y{dis_rotation_y(__random_generator)};
-        const double rotation_z{dis_rotation_z(__random_generator)};
-        const auto x{dis_x(__random_generator)};
-        const auto y{dis_y(__random_generator)};
-        const auto z{dis_z(__random_generator)};
-        const ellipsoid<value_type> ellipsoid_(x, y, z, radius_a, radius_b, radius_c, rotation_x, rotation_y, rotation_z);
+        const value_type radius_a{dis_radius_a(__random_generator)};
+        const value_type radius_b{dis_radius_b(__random_generator)};
+        const value_type radius_c{dis_radius_c(__random_generator)};
+        const value_type rotation_x{dis_rotation_x(__random_generator)};
+        const value_type rotation_y{dis_rotation_y(__random_generator)};
+        const value_type rotation_z{dis_rotation_z(__random_generator)};
+        const value_type x{dis_x(__random_generator)};
+        const value_type y{dis_y(__random_generator)};
+        const value_type z{dis_z(__random_generator)};
+        ellipsoid<value_type> ellipsoid_(x, y, z, radius_a, radius_b, radius_c, rotation_x, rotation_y, rotation_z);
+        ellipsoid_.make_bounding_box();
 
         if(!check_distance(_shapes, ellipsoid_)){
             _shapes.emplace_back(std::make_unique<ellipsoid<value_type>>(ellipsoid_));
             _vol_frac_inclusion += ellipsoid_.volume();
-        }
+            _shapes.back().get()->make_bounding_box();
 
 #ifdef RVE_DEBUG
-        std::cout<<"iter "<<iter<<" volume fraction "<<_vol_frac_inclusion<<" error "<<(volume_faction - (_vol_frac_inclusion/(_box[0]*_box[1])))<<std::endl;
+            std::fstream test_bsp;
+            test_bsp.open("test_bsp_" + std::to_string(iter) + ".geo",std::ios::out);
+            write_gmsh_geo<double> gmsh;
+            gmsh.write_file(test_bsp, *this);
+            gmsh.write_bounding_boxes(test_bsp, *this);
 #endif
+        }
+
+//#ifdef RVE_DEBUG
+        std::cout<<"iter "<<iter<<" volume fraction "<<_vol_frac_inclusion<<" error "<<(volume_faction - (_vol_frac_inclusion/(_box[0]*_box[1])))<<std::endl;
+//#endif
 
         if((volume_faction - (_vol_frac_inclusion/(_box[0]*_box[1]*_box[2]))) < 0.005){
             finished = true;
             break;
         }
-
         ++iter;
     }
-
 
     if(iter == _max_iter){
         throw std::runtime_error("max iterations reached");
     }
-
 }
 
 template <typename _Distribution>

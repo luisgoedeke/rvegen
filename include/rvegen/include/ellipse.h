@@ -3,8 +3,11 @@
 
 #include <cstdlib>
 #include <math.h>
+#include <memory>
 #include "shape_base.h"
-
+#include "bounding_box_base.h"
+#include "rectangle_bounding.h"
+#include "../../../external/Eigen/Eigen"
 namespace rvegen {
 
 template<typename T = double>
@@ -15,6 +18,7 @@ public:
     using size_type = std::size_t;
 
     ellipse():
+        shape_base<T>(),
         _point({0,0}),
         _radius_a(0),
         _radius_b(0),
@@ -22,12 +26,10 @@ public:
         _focus{0},
         _focusp_l({0,0}),
         _focusp_r({0,0})
-
-
-
     {}
 
     ellipse(const value_type x, const value_type y, const value_type radius_a, const value_type radius_b, const value_type rotation):
+        shape_base<T>(),
         _point({x,y}),
         _radius_a(radius_a),
         _radius_b(radius_b),
@@ -37,7 +39,18 @@ public:
         _focusp_r({(_point[0]+cos(_rotation*M_PI)*_focus),(_point[1]+sin(_rotation*M_PI)*_focus)})
     {}
 
-    //copy constructor
+    ellipse(ellipse const& __data):
+        shape_base<T>(),
+        _point(__data._point),
+        _radius_a(__data._radius_a),
+        _radius_b(__data._radius_b),
+        _rotation(__data._rotation),
+        _focus{__data._focus},
+        _focusp_l(__data._focusp_l),
+        _focusp_r(__data._focusp_r)
+    {}
+
+    virtual ~ellipse(){}
 
     value_type operator()(const size_type idx)const{
         return _point[idx];
@@ -112,15 +125,30 @@ public:
         return _focusp_r[1];
     }
 
+    virtual void make_bounding_box()override{
+        using Matrix22  = Eigen::Matrix<value_type,2,2>;
+        using Vector2   = Eigen::Vector2<value_type>;
+        using AngleAxis = Eigen::AngleAxis<value_type>;
 
+        Eigen::DiagonalMatrix<value_type,2> D{1./(_radius_a*_radius_a), 1./(_radius_b*_radius_b)};
+
+        Eigen::Rotation2D<value_type> rot(_rotation*M_PI);
+
+        Matrix22 A = (rot.toRotationMatrix()*D*rot.toRotationMatrix().transpose()).inverse();
+        std::array<value_type, 2> max, min;
+        for(std::size_t i{0}; i<2; ++i){
+            max[i] = _point[i] +  std::sqrt(A(i,i));
+            min[i] = _point[i] -  std::sqrt(A(i,i));
+        }
+
+        auto box_ptr = std::make_unique<rectangle_bounding<value_type>>();
+        box_ptr.get()->top_point() = max;
+        box_ptr.get()->bottom_point() = min;
+        this->_bounding_box = std::move(box_ptr);
+    }
 
     virtual value_type area()const override{
         return _radius_a*_radius_b*M_PI;
-    }
-
-    //bsp function
-    virtual void print() const override {
-        std::cout<<"Hallo bin ein Ellipse"<<std::endl;
     }
 
 private:
@@ -131,7 +159,6 @@ private:
     value_type _focus;
     std::array<value_type, 2> _focusp_l; //left focus if rotation is 0
     std::array<value_type, 2> _focusp_r; //right focus if rotation is 0
-
 };
 
 }
