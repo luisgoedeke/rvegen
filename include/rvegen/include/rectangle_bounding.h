@@ -1,5 +1,5 @@
-#ifndef RECTANGLE_H
-#define RECTANGLE_H
+#ifndef RECTANGLE_BOUNDING_H
+#define RECTANGLE_BOUNDING_H
 
 #include <array>
 #include "bounding_box_base.h"
@@ -56,4 +56,4 @@ private:
 }
 
 
-#endif // RECTANGLE_H
+#endif // RECTANGLE_BOUNDING_H

@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <math.h>
 #include "shape_base.h"
+#include "rectangle_bounding.h"
 
 namespace rvegen {
 
@@ -51,8 +52,19 @@ public:
         return _radius*_radius*M_PI;
     }
 
-    virtual void make_bounding_box()override{
+    virtual void make_bounding_box() override{
+        auto box_ptr = std::make_unique<rectangle_bounding<value_type>>();
+        box_ptr.get()->top_point() = {_point[0] + _radius,  _point[1] + _radius};
+        box_ptr.get()->bottom_point() = {_point[0] - _radius,  _point[1] - _radius};
+        this->_bounding_box = std::move(box_ptr);
+    }
 
+    constexpr inline auto const& point()const{
+        return _point;
+    }
+
+    constexpr inline auto& point(){
+        return _point;
     }
 
 private:

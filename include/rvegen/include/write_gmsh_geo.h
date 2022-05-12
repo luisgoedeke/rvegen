@@ -2,11 +2,13 @@
 #define WRITE_GMSH_GEO_H
 
 #include <iostream>
+#include <iomanip>
 
 #include "circle.h"
 #include "ellipse.h"
 #include "cylinder.h"
 #include "ellipsoid.h"
+#include "rectangle.h"
 #include "box_bounding.h"
 
 namespace rvegen {
@@ -75,40 +77,72 @@ private:
         __file<<"Rectangle(1) = {0, 0, 0, "<<x_box<<", "<<y_box<<", 0};"<<std::endl;
 
         //Rectangle + 4 lines ???? idk...
-        const size_type start = 5;
+        size_type curve_loop{1}, start=0;
+        size_type basic_entities{4};//lines, circles, ...?
+        size_type surfaces{1};
 
         for(size_t i{0}; i<shapes.size(); ++i){
-            if(dynamic_cast<circle<value_typ>*>(shapes[i].get())){
+            if(dynamic_cast<rectangle<value_typ>*>(shapes[i].get())){
+                const auto& data{*static_cast<rectangle<value_typ>*>(shapes[i].get())};
+                const auto& w = data.width();
+                const auto& bottom = data.height();
+                ++surfaces;
+                __file<<"Rectangle("<<surfaces<<") = {"<<-data.width()*0.5<<", "<<-data.height()*0.5<<", 0, "<<data.width()<<", "<<data.height()<<"};"<<std::endl;
+                __file<<"Rotate {{0, 0, 1}, {0, 0, 0}, "<<data.rotation()<<"*2*Pi} {Surface{"<<surfaces<<"};}"<<std::endl;
+                __file<<"Translate{"<<data(0)<<", "<<data(1)<<", 0} {Surface{"<<surfaces<<"};}"<<std::endl;
+                basic_entities += 4;
+                ++curve_loop;
+            }
+        }
+
+        for(size_t i{0}; i<shapes.size(); ++i){
+             if(dynamic_cast<rectangle<value_typ>*>(shapes[i].get())){
+                 //do nothing
+             }else if(dynamic_cast<circle<value_typ>*>(shapes[i].get())){
                 const auto& data{*static_cast<circle<value_typ>*>(shapes[i].get())};
-                __file<<"Circle("<<start+i<<") = {"<<data(0)<<","<<data(1)<<", 0, "<<data.radius()<<", 0, 2*Pi};"<<std::endl;
+                ++basic_entities;
+                ++surfaces;
+                __file<<"Circle("<<basic_entities<<") = {"<<data(0)<<","<<data(1)<<", 0, "<<data.radius()<<", 0, 2*Pi};"<<std::endl;
+                __file<<"Curve Loop("<<curve_loop+1<<") = {"<<basic_entities<<"};"<<std::endl;
+                __file<<"Surface("<<surfaces<<") = {"<<curve_loop+1<<"};"<<std::endl;
+                curve_loop+=2;
             }else if(dynamic_cast<ellipse<value_typ>*>(shapes[i].get())){
                 const auto& data{*static_cast<ellipse<value_typ>*>(shapes[i].get())};
-                __file<<"Ellipse("<<start+i<<") = {"<<data(0)<<","<<data(1)<<", 0, "<<data.radius_a()<<","<<data.radius_b()<<", 0, 2*Pi};"<<std::endl;
-                __file<<"Rotate {{0, 0, 1}, {"<<data(0)<<", "<<data(1)<<", 0}, "<<data.rotation()<<"*Pi} {Curve{"<<start+i<<"};}"<<std::endl;
+                ++basic_entities;
+                ++surfaces;
+                __file<<"Ellipse("<<basic_entities<<") = {"<<data(0)<<","<<data(1)<<", 0, "<<data.radius_a()<<","<<data.radius_b()<<", 0, 2*Pi};"<<std::endl;
+                __file<<"Curve Loop("<<curve_loop+1<<") = {"<<basic_entities<<"};"<<std::endl;
+                __file<<"Surface("<<surfaces<<") = {"<<curve_loop+1<<"};"<<std::endl;
+                curve_loop+=2;
+                __file<<"Rotate {{0, 0, 1}, {"<<data(0)<<", "<<data(1)<<", 0}, "<<data.rotation()<<"*2*Pi} {Surface{"<<surfaces<<"};}"<<std::endl;
             }else{
                 throw std::runtime_error("write_gmsh_geo::write_file_2D(): no matching shape type");
             }
         }
 
 
+//        for(size_t i{0};i<shapes.size();++i){
+//            if(!dynamic_cast<rectangle<value_typ>*>(shapes[i].get())){
+//            __file<<"Curve Loop("<<curve_loop*4+i+start<<") = {"<<curve_loop*4+start+i<<"};"<<std::endl;
+//            }
+//        }
+
+//        for(size_t i{0};i<shapes.size();++i){
+//            if(!dynamic_cast<rectangle<value_typ>*>(shapes[i].get())){
+//            __file<<"Plane Surface("<<curve_loop*4+i+start<<") = {"<<curve_loop*4+start+i<<"};"<<std::endl;
+//            }
+//        }
+
         for(size_t i{0};i<shapes.size();++i){
-            __file<<"Curve Loop("<<i+start<<") = {"<<start+i<<"};"<<std::endl;
+            __file<<"BooleanIntersection{ Surface{1}; }{ Surface{"<<i+2<<"}; Delete; }"<<std::endl;
         }
 
         for(size_t i{0};i<shapes.size();++i){
-            __file<<"Plane Surface("<<i+start<<") = {"<<start+i<<"};"<<std::endl;
+            __file<<"BooleanDifference{ Surface{1}; Delete; }{ Surface{"<<i+2<<"}; }"<<std::endl;
         }
 
         for(size_t i{0};i<shapes.size();++i){
-            __file<<"BooleanIntersection{ Surface{1}; }{ Surface{"<<i+start<<"}; Delete; }"<<std::endl;
-        }
-
-        for(size_t i{0};i<shapes.size();++i){
-            __file<<"BooleanDifference{ Surface{1}; Delete; }{ Surface{"<<i+start<<"}; }"<<std::endl;
-        }
-
-        for(size_t i{0};i<shapes.size();++i){
-            __file<<"BooleanDifference{ Surface{1}; Delete; }{ Surface{"<<i+start<<"}; }"<<std::endl;
+            __file<<"BooleanDifference{ Surface{1}; Delete; }{ Surface{"<<i+2<<"}; }"<<std::endl;
         }
     }
 
@@ -134,9 +168,9 @@ private:
                 const auto& data{*static_cast<ellipsoid<value_typ>*>(shapes[i].get())};
                 __file<<"Sphere("<<start+i<<") = {0, 0, 0, 1};"<<std::endl;
                 __file<<"Dilate{{0, 0, 0}, {"<<data.radius_a()<<", "<<data.radius_b()<<", "<<data.radius_c()<<"}} {Volume{"<<start+i<<"};}"<<std::endl;
-                __file<<"Rotate {{1, 0, 0}, {0, 0, 0}, "<<data.rotation_x()<<"} {Volume{"<<start+i<<"};}"<<std::endl;
-                __file<<"Rotate {{0, 1, 0}, {0, 0, 0}, "<<data.rotation_y()<<"} {Volume{"<<start+i<<"};}"<<std::endl;
-                __file<<"Rotate {{0, 0, 1}, {0, 0, 0}, "<<data.rotation_z()<<"} {Volume{"<<start+i<<"};}"<<std::endl;
+                __file<<"Rotate {{1, 0, 0}, {0, 0, 0}, -"<<data.rotation_x()<<"*2*Pi} {Volume{"<<start+i<<"};}"<<std::endl;
+                __file<<"Rotate {{0, 1, 0}, {0, 0, 0}, -"<<data.rotation_y()<<"*2*Pi} {Volume{"<<start+i<<"};}"<<std::endl;
+                __file<<"Rotate {{0, 0, 1}, {0, 0, 0}, -"<<data.rotation_z()<<"*2*Pi} {Volume{"<<start+i<<"};}"<<std::endl;
                 __file<<"Translate{"<<data(0)<<", "<<data(1)<<", "<<data(2)<<"} {Volume{"<<start+i<<"};}"<<std::endl;
             }else{
                 throw std::runtime_error("write_gmsh_geo::write_file_3D(): no matching shape type");

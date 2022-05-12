@@ -1,7 +1,48 @@
 #ifndef RVE_SHAPE_INPUT_H
 #define RVE_SHAPE_INPUT_H
 
+#include <vector>
+#include <random>
+#include <memory>
+#include <map>
+
+#include "shape_base.h"
+#include "rectangle.h"
+#include "circle.h"
+#include "ellipse.h"
+
 namespace rvegen {
+
+template <typename T>
+class distribution
+{
+public:
+    using value_type = T;
+
+    distribution() {}
+
+    virtual value_type operator()() = 0;
+};
+
+template <typename T>
+class uniform_real_distribution : public distribution<T>
+{
+public:
+    using value_type = T;
+
+    uniform_real_distribution(value_type __a, value_type __b):
+        _dis(__a, __b)
+    {}
+
+    value_type operator()() override {
+        std::random_device _rd;
+        std::mt19937_64 _gen(_rd());
+        return _dis(_gen);
+    }
+
+private:
+    std::uniform_real_distribution<T> _dis;
+};
 
 class rve_shape_input
 {
@@ -46,11 +87,64 @@ public:
         return _random_position;
     }
 
-    virtual void print() const = 0;
+    virtual value_type min_area() const = 0;
 
+    virtual std::unique_ptr<shape_base<value_type>> new_shape() const = 0;
+
+    virtual inline void setup_position(value_type __x_max, value_type __y_max, value_type __z_max = 0){
+        _distributions.insert({"pos_x", std::make_unique<rvegen::uniform_real_distribution<value_type>>(0.0, __x_max)});
+        _distributions.insert({"pos_y", std::make_unique<rvegen::uniform_real_distribution<value_type>>(0.0, __y_max)});
+        if(__z_max != 0){
+            _distributions.insert({"pos_z", std::make_unique<rvegen::uniform_real_distribution<value_type>>(0.0, __z_max)});
+        }
+    }
+
+    inline auto insert_distribution(std::string __key, std::unique_ptr<distribution<value_type>> && __distributions){
+        _distributions.insert({__key, std::move(__distributions)});
+    }
+
+protected:
+    std::map<std::string, std::unique_ptr<distribution<value_type>>> _distributions;
 private:
     value_type _volume_fraction;
     bool _random_position;
+    bool _random_geometry;
+};
+
+class rectangle_input : public rve_shape_input
+{
+public:
+    using value_type = double;
+
+    rectangle_input(){}
+
+    rectangle_input(bool const __random_position, bool const __random_geometry,  value_type const __volume_fraction):
+        rve_shape_input(__volume_fraction, __random_position),
+        _random_geometry(__random_geometry)
+    {}
+
+    virtual ~rectangle_input(){}
+
+    virtual std::unique_ptr<shape_base<value_type>> new_shape() const override {
+        auto& pos_x = *this->_distributions.at("pos_x").get();
+        auto& pos_y = *this->_distributions.at("pos_y").get();
+        auto& width = *this->_distributions.at("width").get();
+        auto& height = *this->_distributions.at("height").get();
+        auto& rot = *this->_distributions.at("rotation").get();
+
+        auto shape = std::make_unique<rectangle<value_type>>();
+        shape.get()->width() = width();
+        shape.get()->height() = height();
+        shape.get()->point() = {pos_x(), pos_y()};
+        shape.get()->rotation() = rot();
+        return shape;
+    }
+
+    virtual value_type min_area() const override{
+        return 0.1;//this->_distributions.at("width")->a()*this->_distributions.at("height")->a()
+    }
+
+private:
     bool _random_geometry;
 };
 
@@ -74,7 +168,7 @@ public:
         _max_radius(_max_radius)
     {}
 
-    ~circle_input(){}
+    virtual ~circle_input(){}
 
     inline auto set_random_radius(bool __val){
         _random_radius = __val;
@@ -100,10 +194,20 @@ public:
         _max_radius = __val;
     }
 
-    virtual void print() const override{
-        std::cout<<"circle"<<std::endl;
+    virtual value_type min_area() const override{
+        return _min_radius*_min_radius*M_PI;
     }
 
+    virtual std::unique_ptr<shape_base<value_type>> new_shape() const override {
+        auto& pos_x = *this->_distributions.at("pos_x").get();
+        auto& pos_y = *this->_distributions.at("pos_y").get();
+        auto& radius = *this->_distributions.at("radius").get();
+
+        auto shape = std::make_unique<circle<value_type>>();
+        shape.get()->radius() = radius();
+        shape.get()->point() = {pos_x(), pos_y()};
+        return shape;
+    }
 private:
     bool _random_radius;
     value_type _min_radius;
@@ -136,7 +240,7 @@ public:
         _max_rotation(_max_rotation)
     {}
 
-    ~ellipse_input(){}
+    virtual ~ellipse_input(){}
 
     inline auto set_random_radius(bool __val){
         _random_radius = __val;
@@ -194,10 +298,24 @@ public:
         _max_rotation = __val;
     }
 
-    virtual void print() const override{
-        std::cout<<"ellipse"<<std::endl;
+    virtual value_type min_area() const override {
+        return 0.1;
     }
 
+    virtual std::unique_ptr<shape_base<value_type>> new_shape() const override {
+        auto& pos_x = *this->_distributions.at("pos_x").get();
+        auto& pos_y = *this->_distributions.at("pos_y").get();
+        auto& radius_a = *this->_distributions.at("radius_a").get();
+        auto& radius_b = *this->_distributions.at("radius_b").get();
+        auto& rotation = *this->_distributions.at("rotation").get();
+
+        auto shape = std::make_unique<ellipse<value_type>>();
+        shape.get()->radius_a() = radius_a();
+        shape.get()->radius_b() = radius_b();
+        shape.get()->rotation() = rotation();
+        shape.get()->point() = {pos_x(), pos_y()};
+        return shape;
+    }
 private:
     bool _random_radius;
     value_type _min_radius_a;
@@ -223,16 +341,16 @@ public:
     {}
 
     cylinder_input(bool const __random_position, bool const __random_radius, bool const __random_height, value_type const _min_radius, value_type const _max_radius, value_type const _min_height, value_type const _max_height,value_type const __volume_fraction):
-         rve_shape_input(__volume_fraction, __random_position),
-         _random_radius(__random_radius),
-         _min_radius(_min_radius),
-         _max_radius(_max_radius),
-         _random_height(__random_height),
-         _min_height(_min_height),
-         _max_height(_max_height)
+        rve_shape_input(__volume_fraction, __random_position),
+        _random_radius(__random_radius),
+        _min_radius(_min_radius),
+        _max_radius(_max_radius),
+        _random_height(__random_height),
+        _min_height(_min_height),
+        _max_height(_max_height)
     {}
 
-    ~cylinder_input(){}
+    virtual ~cylinder_input(){}
 
     inline auto set_random_radius(bool __val){
         _random_radius = __val;
@@ -282,10 +400,16 @@ public:
         _max_height = __val;
     }
 
-    virtual void print() const override{
-        std::cout<<"cylinder"<<std::endl;
+    virtual value_type min_area() const {
+        return 0.1;
     }
 
+    virtual std::unique_ptr<shape_base<value_type>> new_shape() const override {
+
+        auto shape = std::make_unique<rectangle<value_type>>();
+
+        return shape;
+    }
 private:
     bool _random_radius;
     bool _random_height;
@@ -334,7 +458,7 @@ public:
         _max_rotation_z(_max_rotation_z)
     {}
 
-    ~ellipsoid_input(){}
+    virtual ~ellipsoid_input(){}
 
     inline auto set_random_radius(bool __val){
         _random_radius = __val;
@@ -440,10 +564,16 @@ public:
         _max_rotation_z = __val;
     }
 
-    virtual void print() const override{
-        std::cout<<"ellipsoid"<<std::endl;
+    virtual value_type min_area() const {
+        return 0.1;
     }
 
+    virtual std::unique_ptr<shape_base<value_type>> new_shape() const override {
+
+        auto shape = std::make_unique<rectangle<value_type>>();
+
+        return shape;
+    }
 private:
     bool _random_radius;
     value_type _min_radius_a;

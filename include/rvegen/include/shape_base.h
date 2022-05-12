@@ -18,17 +18,13 @@ public:
 
     virtual ~shape_base() {}
 
-    //functionen wie area
     virtual value_type area() const = 0;
 
-    //bsp function
-//    virtual void print() const = 0;
+    virtual void make_bounding_box() = 0;
 
     bounding_box_base<T>* bounding_box()const{
         return _bounding_box.get();
     }
-
-    virtual void make_bounding_box() = 0;
 
 protected:
     std::unique_ptr<bounding_box_base<value_type>> _bounding_box;

@@ -114,7 +114,7 @@ public:
         return (4/3*_radius_a*_radius_b*_radius_c*M_PI);
     }
 
-    virtual void make_bounding_box()override{
+    virtual void make_bounding_box() override {
         using Matrix33  = Eigen::Matrix<value_type,3,3>;
         using Vector3   = Eigen::Vector3<value_type>;
         using AngleAxis = Eigen::AngleAxis<value_type>;

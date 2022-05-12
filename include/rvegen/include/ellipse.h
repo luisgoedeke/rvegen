@@ -22,10 +22,7 @@ public:
         _point({0,0}),
         _radius_a(0),
         _radius_b(0),
-        _rotation(0),
-        _focus{0},
-        _focusp_l({0,0}),
-        _focusp_r({0,0})
+        _rotation(0)
     {}
 
     ellipse(const value_type x, const value_type y, const value_type radius_a, const value_type radius_b, const value_type rotation):
@@ -33,10 +30,7 @@ public:
         _point({x,y}),
         _radius_a(radius_a),
         _radius_b(radius_b),
-        _rotation(rotation),
-        _focus{sqrt((radius_a*radius_a)-(radius_b*radius_b))},
-        _focusp_l({(_point[0]-cos(_rotation*M_PI)*_focus),(_point[1]-sin(_rotation*M_PI)*_focus)}),
-        _focusp_r({(_point[0]+cos(_rotation*M_PI)*_focus),(_point[1]+sin(_rotation*M_PI)*_focus)})
+        _rotation(rotation)
     {}
 
     ellipse(ellipse const& __data):
@@ -44,10 +38,7 @@ public:
         _point(__data._point),
         _radius_a(__data._radius_a),
         _radius_b(__data._radius_b),
-        _rotation(__data._rotation),
-        _focus{__data._focus},
-        _focusp_l(__data._focusp_l),
-        _focusp_r(__data._focusp_r)
+        _rotation(__data._rotation)
     {}
 
     virtual ~ellipse(){}
@@ -85,54 +76,22 @@ public:
         return _rotation;
     }
 
-    value_type focus()const{
-        return _focus;
+    constexpr inline auto const& point()const{
+        return _point;
     }
 
-    value_type& focus(){
-        return _focus;
+    constexpr inline auto& point(){
+        return _point;
     }
 
-    value_type focusp_l_x()const{
-        return _focusp_l[0];
-    }
-
-    value_type& focusp_l_x(){
-        return _focusp_l[0];
-    }
-
-    value_type focusp_l_y()const{
-        return _focusp_l[1];
-    }
-
-    value_type& focusp_l_y(){
-        return _focusp_l[1];
-    }
-
-    value_type focusp_r_x()const{
-        return _focusp_r[0];
-    }
-
-    value_type& focusp_r_x(){
-        return _focusp_r[0];
-    }
-
-    value_type focusp_r_y()const{
-        return _focusp_r[1];
-    }
-
-    value_type& focusp_r_y(){
-        return _focusp_r[1];
-    }
-
-    virtual void make_bounding_box()override{
+    virtual void make_bounding_box() override{
         using Matrix22  = Eigen::Matrix<value_type,2,2>;
         using Vector2   = Eigen::Vector2<value_type>;
         using AngleAxis = Eigen::AngleAxis<value_type>;
 
         Eigen::DiagonalMatrix<value_type,2> D{1./(_radius_a*_radius_a), 1./(_radius_b*_radius_b)};
 
-        Eigen::Rotation2D<value_type> rot(_rotation*M_PI);
+        Eigen::Rotation2D<value_type> rot(2*_rotation*M_PI);
 
         Matrix22 A = (rot.toRotationMatrix()*D*rot.toRotationMatrix().transpose()).inverse();
         std::array<value_type, 2> max, min;
@@ -156,9 +115,6 @@ private:
     value_type _radius_a; // in x direction
     value_type _radius_b; // in y direction
     value_type _rotation;
-    value_type _focus;
-    std::array<value_type, 2> _focusp_l; //left focus if rotation is 0
-    std::array<value_type, 2> _focusp_r; //right focus if rotation is 0
 };
 
 }
