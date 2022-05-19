@@ -39,6 +39,7 @@ set(RVEGEN_HEADER
     ${RVEGEN_INCLUDE_DIR}/box.h
     ${RVEGEN_INCLUDE_DIR}/sphere.h
     ${RVEGEN_INCLUDE_DIR}/box_bounding.h
+    ${RVEGEN_INCLUDE_DIR}/samepack_heuristic.h
 )
 
 # add the library that runs

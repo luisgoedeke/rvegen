@@ -110,6 +110,11 @@ public:
         return _radius_a*_radius_b*M_PI;
     }
 
+    void move(value_type x, value_type y)const{
+        _point[0] = x;
+        _point[1] = y;
+    }
+
 private:
     std::array<value_type, 2> _point;
     value_type _radius_a; // in x direction

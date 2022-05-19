@@ -48,8 +48,14 @@ public:
         return _radius;
     }
 
+
     virtual value_type area()const override{
         return _radius*_radius*M_PI;
+    }
+
+    void move(value_type x, value_type y)const{
+        _point[0] = x;
+        _point[1] = y;
     }
 
     virtual void make_bounding_box() override{

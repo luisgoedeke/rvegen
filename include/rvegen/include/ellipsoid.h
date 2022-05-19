@@ -114,6 +114,12 @@ public:
         return (4/3*_radius_a*_radius_b*_radius_c*M_PI);
     }
 
+    void move(value_type x, value_type y, value_type z)const{
+        _point[0] = x;
+        _point[1] = y;
+        _point[2] = z;
+    }
+
     virtual void make_bounding_box() override {
         using Matrix33  = Eigen::Matrix<value_type,3,3>;
         using Vector3   = Eigen::Vector3<value_type>;

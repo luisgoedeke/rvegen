@@ -52,13 +52,15 @@ public:
     rve_shape_input():
         _volume_fraction(0),
         _random_position(true),
-        _random_geometry(false)
+        _random_geometry(false),
+        _number_of_shapes(0)
     {}
 
-    rve_shape_input(value_type const __volume_fraction, bool const __random_position, bool const __random_geometry = false):
+    rve_shape_input(value_type const __volume_fraction, int const __number_of_shapes, bool const __random_position, bool const __random_geometry = false):
         _volume_fraction(__volume_fraction),
         _random_position(__random_position),
-        _random_geometry(__random_geometry)
+        _random_geometry(__random_geometry),
+        _number_of_shapes(__number_of_shapes)
     {}
 
     virtual ~rve_shape_input() {}
@@ -69,6 +71,22 @@ public:
 
     inline auto get_volume_fraction()const{
         return _volume_fraction;
+    }
+
+    inline auto set_number_of_shapes(int __var){
+        _number_of_shapes = __var;
+    }
+
+    inline auto get_number_of_shapes()const{
+        return _number_of_shapes;
+    }
+
+    inline void increase_number_of_shapes(){
+        _number_of_shapes++;
+    }
+
+    inline void decrease_number_of_shapes(){
+        _number_of_shapes--;
     }
 
     inline auto set_random_geometry(bool __val){
@@ -109,6 +127,7 @@ private:
     value_type _volume_fraction;
     bool _random_position;
     bool _random_geometry;
+    int _number_of_shapes;
 };
 
 class rectangle_input : public rve_shape_input
@@ -118,8 +137,8 @@ public:
 
     rectangle_input(){}
 
-    rectangle_input(bool const __random_position, bool const __random_geometry,  value_type const __volume_fraction):
-        rve_shape_input(__volume_fraction, __random_position),
+    rectangle_input(bool const __random_position, bool const __random_geometry,  value_type const __volume_fraction, int const __number_of_shapes):
+        rve_shape_input(__volume_fraction, __number_of_shapes, __random_position),
         _random_geometry(__random_geometry)
     {}
 
@@ -148,8 +167,6 @@ private:
     bool _random_geometry;
 };
 
-
-
 class circle_input : public rve_shape_input
 {
 public:
@@ -161,11 +178,11 @@ public:
         _max_radius()
     {}
 
-    circle_input(bool const __random_position, bool const __random_radius, value_type const _min_radius, value_type const _max_radius, value_type const __volume_fraction):
-        rve_shape_input(__volume_fraction, __random_position),
+    circle_input(bool const __random_position, bool const __random_radius, value_type const __min_radius, value_type const __max_radius, value_type const __volume_fraction, int const __number_of_shapes):
+        rve_shape_input(__volume_fraction, __number_of_shapes, __random_position),
         _random_radius(__random_radius),
-        _min_radius(_min_radius),
-        _max_radius(_max_radius)
+        _min_radius(__min_radius),
+        _max_radius(__max_radius)
     {}
 
     virtual ~circle_input(){}
@@ -229,8 +246,8 @@ public:
         _max_rotation()
     {}
 
-    ellipse_input(bool const __random_position, bool const __random_radius, value_type const _min_radius_a, value_type const _max_radius_a, value_type const _min_radius_b, value_type const _max_radius_b, value_type const _min_rotation, value_type const _max_rotation, value_type const __volume_fraction):
-        rve_shape_input(__volume_fraction, __random_position),
+    ellipse_input(bool const __random_position, bool const __random_radius, value_type const _min_radius_a, value_type const _max_radius_a, value_type const _min_radius_b, value_type const _max_radius_b, value_type const _min_rotation, value_type const _max_rotation, value_type const __volume_fraction, int const _number_of_shapes):
+        rve_shape_input(__volume_fraction, _number_of_shapes, __random_position),
         _random_radius(__random_radius),
         _min_radius_a(_min_radius_a),
         _max_radius_a(_max_radius_a),
@@ -340,14 +357,14 @@ public:
         _max_height()
     {}
 
-    cylinder_input(bool const __random_position, bool const __random_radius, bool const __random_height, value_type const _min_radius, value_type const _max_radius, value_type const _min_height, value_type const _max_height,value_type const __volume_fraction):
-        rve_shape_input(__volume_fraction, __random_position),
+    cylinder_input(bool const __random_position, bool const __random_radius, bool const __random_height, value_type const __min_radius, value_type const __max_radius, value_type const __min_height, value_type const __max_height,value_type const __volume_fraction, int const __number_of_shapes):
+        rve_shape_input(__volume_fraction, __number_of_shapes, __random_position),
         _random_radius(__random_radius),
-        _min_radius(_min_radius),
-        _max_radius(_max_radius),
+        _min_radius(__min_radius),
+        _max_radius(__max_radius),
         _random_height(__random_height),
-        _min_height(_min_height),
-        _max_height(_max_height)
+        _min_height(__min_height),
+        _max_height(__max_height)
     {}
 
     virtual ~cylinder_input(){}
@@ -441,8 +458,8 @@ public:
 
     {}
 
-    ellipsoid_input(bool const __random_position, bool const __random_radius, value_type const _min_radius_a, value_type const _max_radius_a, value_type const _min_radius_b, value_type const _max_radius_b, value_type const _min_radius_c, value_type const _max_radius_c, value_type const _min_rotation_x, value_type const _max_rotation_x, value_type const _min_rotation_y, value_type const _max_rotation_y, value_type const _min_rotation_z, value_type const _max_rotation_z,  value_type const __volume_fraction):
-        rve_shape_input(__volume_fraction, __random_position),
+    ellipsoid_input(bool const __random_position, bool const __random_radius, value_type const _min_radius_a, value_type const _max_radius_a, value_type const _min_radius_b, value_type const _max_radius_b, value_type const _min_radius_c, value_type const _max_radius_c, value_type const _min_rotation_x, value_type const _max_rotation_x, value_type const _min_rotation_y, value_type const _max_rotation_y, value_type const _min_rotation_z, value_type const _max_rotation_z,  value_type const __volume_fraction, const int __number_of_shapes):
+        rve_shape_input(__volume_fraction, __number_of_shapes, __random_position),
         _random_radius(__random_radius),
         _min_radius_a(_min_radius_a),
         _max_radius_a(_max_radius_a),

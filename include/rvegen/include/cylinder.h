@@ -66,6 +66,12 @@ public:
         return _radius*_radius*M_PI*_height;
     }
 
+    void move(value_type x, value_type y, value_type z)const{
+        _point[0] = x;
+        _point[1] = y;
+        _point[2] = z;
+    }
+
     virtual void make_bounding_box() override {
 
     }
