@@ -649,6 +649,87 @@ bool collision(std::vector<_PTR<shape_base<_T>>> const& __shapes, shape_base<_T>
     return false;
 }
 
+template<template<class> class _PTR, typename _T>
+bool box_collision(std::vector<_PTR<shape_base<_T>>> const& __shapes, shape_base<_T> * __shape){
+    if(dynamic_cast<rectangle<_T>*>(__shape)){
+        for(const auto& shape : __shapes){
+            if(dynamic_cast<rectangle<_T>*>(shape.get())){
+                //check distance
+                if(collision_details(*static_cast<rectangle<_T>*>(__shape), *static_cast<rectangle<_T>*>(shape.get()))){
+                    //collision
+                    return true;
+                }
+            }else if(dynamic_cast<circle<_T>*>(shape.get())){
+                //check distance
+                if(collision_details(*static_cast<rectangle<_T>*>(__shape), *static_cast<circle<_T>*>(shape.get()))){
+                    //collision
+                    return true;
+                }
+            }else if(dynamic_cast<ellipse<_T>*>(shape.get())){
+                //check distance
+                if(collision_details(*static_cast<rectangle<_T>*>(__shape), *static_cast<ellipse<_T>*>(shape.get()))){
+                    //collision
+                    return true;
+                }
+            }else{
+                throw std::runtime_error("collision(): no matching shape type");
+            }
+        }
+    }else if(dynamic_cast<circle<_T>*>(__shape)){
+        for(const auto& shape : __shapes){
+            if(dynamic_cast<rectangle<_T>*>(shape.get())){
+                //check distance
+                if(collision_details(*static_cast<circle<_T>*>(__shape), *static_cast<rectangle<_T>*>(shape.get()))){
+                    //collision
+                    return true;
+                }
+            }else if(dynamic_cast<circle<_T>*>(shape.get())){
+                //check distance
+                if(collision_details(*static_cast<circle<_T>*>(__shape), *static_cast<circle<_T>*>(shape.get()))){
+                    //collision
+                    return true;
+                }
+            }else if(dynamic_cast<ellipse<_T>*>(shape.get())){
+                //check distance
+                if(collision_details(*static_cast<circle<_T>*>(__shape), *static_cast<ellipse<_T>*>(shape.get()))){
+                    //collision
+                    return true;
+                }
+            }else{
+                throw std::runtime_error("collision(): no matching shape type");
+            }
+        }
+    }else if(dynamic_cast<ellipse<_T>*>(__shape)){
+        for(const auto& shape : __shapes){
+            if(dynamic_cast<rectangle<_T>*>(shape.get())){
+                //check distance
+                if(collision_details(*static_cast<ellipse<_T>*>(__shape), *static_cast<rectangle<_T>*>(shape.get()))){
+                    //collision
+                    return true;
+                }
+            }else if(dynamic_cast<circle<_T>*>(shape.get())){
+                //check distance
+                if(collision_details(*static_cast<ellipse<_T>*>(__shape), *static_cast<circle<_T>*>(shape.get()))){
+                    //collision
+                    return true;
+                }
+            }else if(dynamic_cast<ellipse<_T>*>(shape.get())){
+                //check distance
+                if(collision(*static_cast<ellipse<_T>*>(__shape), *static_cast<ellipse<_T>*>(shape.get()))){
+                    //collision
+                    return true;
+                }
+            }else{
+                throw std::runtime_error("collision(): no matching shape type");
+            }
+        }
+    }else {
+        throw std::runtime_error("collision(): no matching shape type");
+    }
+
+    return false;
+}
+
 //template<template<class> class _PTR, typename _T>
 //bool collision(std::vector<_PTR<shape_base<_T>>> const& __shapes, circle<_T> const& __circle){
 //    for(auto& shape : __shapes){

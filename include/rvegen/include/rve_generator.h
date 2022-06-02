@@ -7,6 +7,8 @@
 #include <array>
 #include <memory>
 #include <map>
+#include <utility>
+#include <algorithm>
 
 #include "circle.h"
 #include "cylinder.h"
@@ -14,7 +16,9 @@
 #include "ellipsoid.h"
 #include "check_distance.h"
 #include "rve_shape_input.h"
+#include "samepack_heuristic.h"
 #include "write_gmsh_geo.h"
+
 
 namespace rvegen {
 
@@ -22,6 +26,7 @@ enum rveType{
     Periodic,
     Random,
     OnlyInside,
+    OnlyInsideSamepackHeuristic,
 };
 
 //base point is at (0,0,0)
@@ -41,10 +46,10 @@ public:
     using size_type = std::size_t;
 
 
-    rve_generator(rveType const __rve_type = rveType::OnlyInside, std::size_t const __dimension = 3, value_type const _x = 1, value_type const _y = 1, value_type const _z = 1):
+    rve_generator(rveType const __rve_type = rveType::OnlyInsideSamepackHeuristic, std::size_t const __dimension = 2, value_type const _x = 1, value_type const _y = 1, value_type const _z = 1):
         _rve_type(__rve_type),
         _dim(__dimension),
-        _max_iter(500000),
+        _max_iter(50000),
         _vol_frac_inclusion(0),
         _box{_x,_y,_z}
     {}
@@ -134,6 +139,8 @@ private:
             //compute_single_circle_periodic(__input, __random_generator);
         }else if(_rve_type == rveType::Random){
             compute_multiple_inclusion_stuff_random(__input_shape, __random_generator);
+        }else if(_rve_type == rveType::OnlyInsideSamepackHeuristic){
+            compute_multiple_inclusion_stuff_only_inside_samepack_heuristic(__input_shape, __random_generator);
         }
     }
 
@@ -148,6 +155,8 @@ private:
             //compute_single_circle_periodic(__input, __random_generator);
         }else if(_rve_type == rveType::Random){
             compute_inclusion_stuff_random(__input_shape, __random_generator);
+        }else if(_rve_type == rveType::OnlyInsideSamepackHeuristic){
+            compute_inclusion_stuff_only_inside_samepack_heuristic(__input_shape, __random_generator);
         }
     }
 
@@ -156,6 +165,12 @@ private:
 
     template<typename _Generator>
     constexpr inline auto compute_multiple_inclusion_stuff_random(std::vector<std::unique_ptr<rvegen::rve_shape_input>>const& __input_shape, _Generator& __random_generator);
+
+    template<typename _Generator>
+    constexpr inline auto compute_inclusion_stuff_only_inside_samepack_heuristic(rve_shape_input* __input_shape, _Generator& __random_generator);
+
+    template<typename _Generator>
+    constexpr inline auto compute_multiple_inclusion_stuff_only_inside_samepack_heuristic(std::vector<std::unique_ptr<rvegen::rve_shape_input>>const& __input_shape, _Generator& __random_generator);
 
     template<typename _Generator>
     constexpr inline auto compute_single_rectangle(rectangle_input const& __input, _Generator& __random_generator);
@@ -219,6 +234,8 @@ private:
     value_type _vol_frac_inclusion;
     std::array<value_type, 3> _box;
     std::vector<std::unique_ptr<shape_base<value_type>>> _shapes;
+    std::vector<std::pair<value_type, std::unique_ptr<shape_base<value_type>>>> _generated_shapes;
+    std::vector<std::pair<int, int>> sections;
 };
 
 template<typename T>
@@ -451,6 +468,63 @@ constexpr inline auto rve_generator<_Distribution>::compute_multiple_inclusion_s
     }
 }
 
+template <typename _Distribution>
+template<typename _Generator>
+constexpr inline auto rve_generator<_Distribution>::compute_multiple_inclusion_stuff_only_inside_samepack_heuristic(std::vector<std::unique_ptr<rvegen::rve_shape_input>>const& __input_shapes, _Generator& __random_generator){
+    std::cout<<"compute_multiple_inclusion_stuff_samepack_heuristic"<<std::endl;
+
+    value_type volume_fraction{0};
+    value_type area{0};
+    for(auto & shape : __input_shapes){
+        volume_fraction += shape.get()->get_volume_fraction();
+        area += shape.get()->min_area();
+    }
+
+    if(1.0 - volume_fraction <= 0){
+        throw std::runtime_error("rve_generator: volume_fraction >= 1");
+    }
+
+    //reserve data for faster push back of new elements
+    const size_type max_inclusions{static_cast<size_type>((_box[0]*_box[1]*volume_fraction)/area)};
+    _shapes.clear();
+    _shapes.reserve(max_inclusions);
+    for(auto & shape : __input_shapes){
+        if(shape.get()->is_random_position()){
+            if(dimension() == 2){
+                shape.get()->setup_position(_box[0], _box[1]);
+            }else{
+                shape.get()->setup_position(_box[0], _box[1], _box[2]);
+            }
+        }
+
+        volume_fraction = shape.get()->get_volume_fraction();
+        size_type iter{0};
+        bool finished{false};
+        _vol_frac_inclusion = 0;
+        int number_of_shapes = shape.get()->get_number_of_shapes();
+/*
+        //generate_shapes
+        for (int i = 0; i <= number_of_shapes;i++){
+            auto new_shape = shape.get()->new_shape();
+            new_shape.get()->make_bounding_box();
+            _generated_shapes.emplace_back(std::move(new_shape));
+        }
+
+        //sort_shapes
+        _sorted_shapes.reserve(number_of_shapes);
+        for(auto& shape : _generated_shapes){
+            _sorted_shapes.push_back({shape.get()->area, *shape.get()});
+        }
+
+        for (int i = 0; i <= number_of_shapes; i++){
+            _sorted_shapes.emplace_back({i, _sorted_shapes(i)});
+        }
+*/
+        if(iter == _max_iter){
+            throw std::runtime_error("max iterations reached");
+        }
+    }
+}
 
 template <typename _Distribution>
 template<typename _Generator>
@@ -515,6 +589,88 @@ constexpr inline auto rve_generator<_Distribution>::compute_inclusion_stuff_rand
     if(iter == _max_iter){
         throw std::runtime_error("max iterations reached");
     }
+}
+
+template <typename _Distribution>
+template<typename _Generator>
+constexpr inline auto rve_generator<_Distribution>::compute_inclusion_stuff_only_inside_samepack_heuristic(rve_shape_input* __input_shape, _Generator& __random_generator){
+    std::cout<<"compute_inclusion_stuff_only_inside_samepack_heuristic"<<std::endl;
+
+    //    const value_type minR{__input.get_radius_min()}, maxR{__input.get_radius_max()};
+    //
+    //    _Distribution dis_radius(minR, maxR);
+    //    _Distribution dis_x(0, _box[0]);
+    //    _Distribution dis_y(0, _box[1]);
+
+    if(__input_shape->is_random_position()){
+        if(dimension() == 2){
+            __input_shape->setup_position(0, 0);
+        }else{
+            __input_shape->setup_position(0, 0, 0);
+        }
+
+    }
+
+    size_type iter{0};
+
+    const value_type volume_fraction{__input_shape->get_volume_fraction()};
+    const value_type area{__input_shape->min_area()};
+    const size_type max_inclusions{static_cast<size_type>((_box[0]*_box[1]*volume_fraction)/area)};
+    _vol_frac_inclusion = 0;
+    int number_of_shapes = __input_shape->get_number_of_shapes();
+
+    _shapes.clear();
+    _generated_shapes.clear();
+
+    //reserve data for faster push back of new elements
+    _shapes.reserve(max_inclusions);
+    _generated_shapes.reserve(number_of_shapes);
+
+    generate_shapes(number_of_shapes, __input_shape, _generated_shapes);
+
+    sort_shapes(_generated_shapes);
+
+    int AnzahlBereiche = 4;
+    bool right_size = check_size(AnzahlBereiche, _generated_shapes);
+
+//    if(right_size == false){
+//        return;
+//    }
+
+    set_sections(AnzahlBereiche, number_of_shapes, sections);
+
+    int AnzahlDurchläufeGesamt = 10;
+    int FehlversucheFrei = 0;
+    int FehlversucheSeitenMax = 1000;
+    int FehlversucheFreiMax = 1000;
+
+    //Durchgänge gesamt
+    for (int i=0;i<100;i++){
+       //Bereiche
+        for (int j=0;j<4;j++){
+           fill_sides(dimension(), j, FehlversucheSeitenMax, sections, _shapes, _generated_shapes);
+           while (FehlversucheFrei <= FehlversucheFreiMax){
+                 if (!arrange_next(dimension(), j, sections, _shapes, _generated_shapes)){
+                    FehlversucheFrei++;
+                }
+                 else{
+                     FehlversucheFrei = 0;
+                 }
+            }
+           FehlversucheFrei = 0;
+        }
+    }
+//    add_gravity(dimension(),_shapes);
+/*
+#ifdef RVE_DEBUG
+        std::cout<<"iter "<<iter<<" volume fraction "<<_vol_frac_inclusion<<" error "<<(volume_fraction - (_vol_frac_inclusion/(_box[0]*_box[1])))<<std::endl;
+        std::fstream test_bsp;
+        test_bsp.open("test_bsp_" + std::to_string(iter) + ".geo",std::ios::out);
+        write_gmsh_geo<double> gmsh;
+        gmsh.write_file(test_bsp, *this);
+        gmsh.write_bounding_boxes(test_bsp, *this);
+#endif
+*/
 }
 
 
@@ -1615,7 +1771,6 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_ellipsoid_onl
         throw std::runtime_error("max iterations reached");
     }
 }
-
 
 
 //template<typename Type, typename Distribution>

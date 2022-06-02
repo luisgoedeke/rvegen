@@ -52,6 +52,27 @@ public:
         return _radius*_radius*M_PI;
     }
 
+    value_type max_expansion()const{
+        return _radius;
+    }
+
+    value_type& max_expansion(){
+        return _radius;
+    }
+
+    std::unique_ptr<rectangle_bounding<value_type>> bounding_box(){
+        return this->bounding_box();
+    }
+
+    std::array<T,3> get_middle_point()const override{
+        return {_point[0], _point[1], 0};
+    }
+
+    void set_middle_point(std::array<T,3> middle_point){
+        _point[0] = middle_point[0];
+        _point[1] = middle_point[1];
+    }
+
     virtual void make_bounding_box() override{
         auto box_ptr = std::make_unique<rectangle_bounding<value_type>>();
         box_ptr.get()->top_point() = {_point[0] + _radius,  _point[1] + _radius};

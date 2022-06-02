@@ -85,6 +85,25 @@ public:
     constexpr inline auto& rotation(){
         return _rotation;
     }
+
+    std::array<T,3> get_middle_point()const override{
+    return {_point[0], _point[1], _point[2]};
+    }
+
+    void set_middle_point(std::array<T,3> middle_point){
+        _point[0] = middle_point[0];
+        _point[1] = middle_point[1];
+    }
+
+    value_type max_expansion()const{
+        if (_width > _height){
+            return _width;
+        }
+        else{
+            return _height;
+        }
+    }
+
 private:
     value_type _width;
     value_type _height;

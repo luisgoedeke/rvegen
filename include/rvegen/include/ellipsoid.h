@@ -114,6 +114,34 @@ public:
         return (4/3*_radius_a*_radius_b*_radius_c*M_PI);
     }
 
+    value_type max_expansion()const{
+        if ((_radius_a > _radius_b)&&(_radius_a > _radius_b)){
+            return _radius_a;
+        }
+        else if ((_radius_b > _radius_a)&&(_radius_b > _radius_c)){
+            return _radius_b;
+        }
+        else {
+            return _radius_c;
+        }
+    }
+
+    std::array<T,3> get_middle_point()const override{
+        return {_point[0], _point[1], _point[2]};
+    }
+
+    void set_middle_point(std::array<T,3> middle_point){
+        _point[0] = middle_point[0];
+        _point[1] = middle_point[1];
+        _point[2] = middle_point[2];
+    }
+
+    void move(value_type x, value_type y, value_type z)const{
+        _point[0] = x;
+        _point[1] = y;
+        _point[2] = z;
+    }
+
     virtual void make_bounding_box() override {
         using Matrix33  = Eigen::Matrix<value_type,3,3>;
         using Vector3   = Eigen::Vector3<value_type>;
