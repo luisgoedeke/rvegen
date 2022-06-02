@@ -46,10 +46,10 @@ public:
     using size_type = std::size_t;
 
 
-    rve_generator(rveType const __rve_type = rveType::OnlyInside, std::size_t const __dimension = 3, value_type const _x = 1, value_type const _y = 1, value_type const _z = 1):
+    rve_generator(rveType const __rve_type = rveType::OnlyInsideSamepackHeuristic, std::size_t const __dimension = 2, value_type const _x = 1, value_type const _y = 1, value_type const _z = 1):
         _rve_type(__rve_type),
         _dim(__dimension),
-        _max_iter(500000),
+        _max_iter(50000),
         _vol_frac_inclusion(0),
         _box{_x,_y,_z}
     {}
@@ -604,23 +604,24 @@ constexpr inline auto rve_generator<_Distribution>::compute_inclusion_stuff_only
 
     if(__input_shape->is_random_position()){
         if(dimension() == 2){
-            __input_shape->setup_position(_box[0], _box[1]);
+            __input_shape->setup_position(0, 0);
         }else{
-            __input_shape->setup_position(_box[0], _box[1], _box[2]);
+            __input_shape->setup_position(0, 0, 0);
         }
 
     }
 
     size_type iter{0};
+
     const value_type volume_fraction{__input_shape->get_volume_fraction()};
     const value_type area{__input_shape->min_area()};
-    bool finished{false};
     const size_type max_inclusions{static_cast<size_type>((_box[0]*_box[1]*volume_fraction)/area)};
     _vol_frac_inclusion = 0;
     int number_of_shapes = __input_shape->get_number_of_shapes();
 
     _shapes.clear();
     _generated_shapes.clear();
+
     //reserve data for faster push back of new elements
     _shapes.reserve(max_inclusions);
     _generated_shapes.reserve(number_of_shapes);
@@ -632,75 +633,35 @@ constexpr inline auto rve_generator<_Distribution>::compute_inclusion_stuff_only
     int AnzahlBereiche = 4;
     bool right_size = check_size(AnzahlBereiche, _generated_shapes);
 
-    if(right_size == false){
-        return;
-    }
+//    if(right_size == false){
+//        return;
+//    }
 
     set_sections(AnzahlBereiche, number_of_shapes, sections);
 
-    for (int i=0; i<sections.size(); i++){
-        std::cout << std::get<0>(sections[i]) << " " << std::get<1>(sections[i]) <<std::endl;
-    }
+    int AnzahlDurchläufeGesamt = 10;
+    int FehlversucheFrei = 0;
+    int FehlversucheSeitenMax = 1000;
+    int FehlversucheFreiMax = 1000;
 
-    adjust_sections(1, sections);
-
-    for (int i=0; i<sections.size(); i++){
-        std::cout << std::get<0>(sections[i]) << " " << std::get<1>(sections[i]) <<std::endl;
-    }
-
-    for (int i=0; i<_generated_shapes.size(); i++){
-       std::cout << std::get<0>(_generated_shapes[i]) <<std::endl;
-    }
-
-    arrange_bottom(0, sections, _shapes, _generated_shapes, __input_shape);
-
-
-    int AnzahlDurchläufe = 100;
-    int FehlversucheSeiten;
-    int FehlversucheMax;
-    int FehlversucheSeitenMax = 100;
-    int FehlversucheFreiMax = 100;
-    //0=bottom, 1=right, 2=top, 3=left, 4=back, 5=front
-    bool was_used[6]{false, false, false, false, false, false};
-
-    //Schleife für Anzahl der Durchläufe mit Gravitation
-    for (int i=1; i<=AnzahlDurchläufe; i++){
-        //Schleife für die Bereiche aus dem Vektor
-        for(int j = 0; j<AnzahlBereiche; j++){
-            int start = std::get<0>(sections[j]);
-            int end = std::get<0>(sections[j]);
-            //Schleife für die Seiten
-            while (FehlversucheSeiten <= FehlversucheSeitenMax) {
-                //0=bottom, 1=right, 2=top, 3=left, 4=back, 5=front
-                if(dimension() == 2){
-                    const int side = rand() % 4;
-                    if(was_used[side] == false){
-                        was_used[side] = true;
-                    }
-                }else{
-                    const int side = rand() % 6;
-                    if (was_used[side] == false){
-                        was_used[side] = true;
-                    }
+    //Durchgänge gesamt
+    for (int i=0;i<100;i++){
+       //Bereiche
+        for (int j=0;j<4;j++){
+           fill_sides(dimension(), j, FehlversucheSeitenMax, sections, _shapes, _generated_shapes);
+           while (FehlversucheFrei <= FehlversucheFreiMax){
+                 if (!arrange_next(dimension(), j, sections, _shapes, _generated_shapes)){
+                    FehlversucheFrei++;
                 }
-                FehlversucheSeiten++;
+                 else{
+                     FehlversucheFrei = 0;
+                 }
             }
+           FehlversucheFrei = 0;
         }
     }
-
-
-    iter = 0;
-    _vol_frac_inclusion = 0;
-    while (iter <= _max_iter) {
-        //new shape
-        auto new_shape = __input_shape->new_shape();
-        new_shape.get()->make_bounding_box();
-
-        if(!collision(_shapes, new_shape.get())){
-            _vol_frac_inclusion += new_shape->area();
-            _shapes.emplace_back(std::move(new_shape));
-        }
-
+//    add_gravity(dimension(),_shapes);
+/*
 #ifdef RVE_DEBUG
         std::cout<<"iter "<<iter<<" volume fraction "<<_vol_frac_inclusion<<" error "<<(volume_fraction - (_vol_frac_inclusion/(_box[0]*_box[1])))<<std::endl;
         std::fstream test_bsp;
@@ -709,19 +670,9 @@ constexpr inline auto rve_generator<_Distribution>::compute_inclusion_stuff_only
         gmsh.write_file(test_bsp, *this);
         gmsh.write_bounding_boxes(test_bsp, *this);
 #endif
-
-        if((volume_fraction - (_vol_frac_inclusion/(_box[0]*_box[1]))) < 0.005){
-            finished = true;
-            break;
-        }
-        ++iter;
-    }
-
-
-    if(iter == _max_iter){
-        throw std::runtime_error("max iterations reached");
-    }
+*/
 }
+
 
 
 template <typename _Distribution>

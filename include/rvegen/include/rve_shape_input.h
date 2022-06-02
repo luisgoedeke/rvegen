@@ -1,6 +1,7 @@
 #ifndef RVE_SHAPE_INPUT_H
 #define RVE_SHAPE_INPUT_H
 
+#include <iostream>
 #include <vector>
 #include <random>
 #include <memory>
@@ -34,10 +35,19 @@ public:
         _dis(__a, __b)
     {}
 
+    uniform_real_distribution():
+        _dis()
+    {}
+
     value_type operator()() override {
         std::random_device _rd;
         std::mt19937_64 _gen(_rd());
         return _dis(_gen);
+    }
+
+    void set_parameter(value_type a, value_type b){
+        using para = typename std::uniform_real_distribution<T>::param_type;
+        _dis.param(para{a,b});
     }
 
 private:
@@ -123,6 +133,7 @@ public:
 
 protected:
     std::map<std::string, std::unique_ptr<distribution<value_type>>> _distributions;
+//    std::map<std::string, std::unique_ptr<uniform_real_distribution<value_type>>> _distributions_samepack;
 private:
     value_type _volume_fraction;
     bool _random_position;
@@ -225,6 +236,7 @@ public:
         shape.get()->point() = {pos_x(), pos_y()};
         return shape;
     }
+
 private:
     bool _random_radius;
     value_type _min_radius;
@@ -333,6 +345,7 @@ public:
         shape.get()->point() = {pos_x(), pos_y()};
         return shape;
     }
+
 private:
     bool _random_radius;
     value_type _min_radius_a;
@@ -427,6 +440,7 @@ public:
 
         return shape;
     }
+
 private:
     bool _random_radius;
     bool _random_height;
@@ -591,6 +605,7 @@ public:
 
         return shape;
     }
+
 private:
     bool _random_radius;
     value_type _min_radius_a;

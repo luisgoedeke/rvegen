@@ -66,6 +66,34 @@ public:
         return _radius*_radius*M_PI*_height;
     }
 
+    value_type max_expansion()const{
+        if (_height/2 > _radius){
+            return _height;
+        }
+        else{
+            return _radius;
+        }
+    }
+
+    value_type& max_expansion(){
+        if (_height/2 > _radius){
+            return _height;
+        }
+        else{
+            return _radius;
+        }
+    }
+
+    std::array<T,3> get_middle_point()const override{
+        return {_point[0], _point[1], _point[2]};
+    }
+
+    void set_middle_point(std::array<T,3> middle_point){
+        _point[0] = middle_point[0];
+        _point[1] = middle_point[1];
+        _point[2] = middle_point[2];
+    }
+
     void move(value_type x, value_type y, value_type z)const{
         _point[0] = x;
         _point[1] = y;
