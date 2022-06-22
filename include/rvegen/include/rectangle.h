@@ -30,6 +30,10 @@ public:
         return _width*_height;
     }
 
+    virtual value_type volume() const {
+        return 0.0;
+    }
+
     virtual void make_bounding_box() override {
         using Matrix  = Eigen::Matrix<value_type,2,2>;
         using Vector   = Eigen::Vector2<value_type>;

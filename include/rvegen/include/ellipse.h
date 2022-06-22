@@ -103,11 +103,14 @@ public:
         Eigen::Rotation2D<value_type> rot(2*_rotation*M_PI);
 
         Matrix22 A = (rot.toRotationMatrix()*D*rot.toRotationMatrix().transpose()).inverse();
-        std::array<value_type, 2> max, min;
+        std::array<value_type, 3> max, min;
         for(std::size_t i{0}; i<2; ++i){
             max[i] = _point[i] +  std::sqrt(A(i,i));
             min[i] = _point[i] -  std::sqrt(A(i,i));
         }
+
+        max[2] = 0;
+        min[2] = 0;
 
         auto box_ptr = std::make_unique<rectangle_bounding<value_type>>();
         box_ptr.get()->top_point() = max;
@@ -117,6 +120,10 @@ public:
 
     virtual value_type area()const override{
         return _radius_a*_radius_b*M_PI;
+    }
+
+    virtual value_type volume()const override{
+        return 0;
     }
 
     value_type max_expansion()const{

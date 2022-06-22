@@ -14,6 +14,7 @@
 #include "include/cylinder.h"
 #include "include/ellipse.h"
 #include "include/ellipsoid.h"
+#include "include/sphere.h"
 
 //rve generator
 #include "include/rve_generator.h"

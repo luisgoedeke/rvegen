@@ -11,6 +11,8 @@
 #include "rectangle.h"
 #include "circle.h"
 #include "ellipse.h"
+#include "sphere.h"
+#include "cylinder.h"
 
 namespace rvegen {
 
@@ -117,14 +119,14 @@ public:
 
     virtual value_type min_area() const = 0;
 
+    virtual value_type min_volume() const = 0;
+
     virtual std::unique_ptr<shape_base<value_type>> new_shape() const = 0;
 
     virtual inline void setup_position(value_type __x_max, value_type __y_max, value_type __z_max = 0){
         _distributions.insert({"pos_x", std::make_unique<rvegen::uniform_real_distribution<value_type>>(0.0, __x_max)});
         _distributions.insert({"pos_y", std::make_unique<rvegen::uniform_real_distribution<value_type>>(0.0, __y_max)});
-        if(__z_max != 0){
-            _distributions.insert({"pos_z", std::make_unique<rvegen::uniform_real_distribution<value_type>>(0.0, __z_max)});
-        }
+        _distributions.insert({"pos_z", std::make_unique<rvegen::uniform_real_distribution<value_type>>(0.0, __z_max)});
     }
 
     inline auto insert_distribution(std::string __key, std::unique_ptr<distribution<value_type>> && __distributions){
@@ -172,6 +174,10 @@ public:
 
     virtual value_type min_area() const override{
         return 0.1;//this->_distributions.at("width")->a()*this->_distributions.at("height")->a()
+    }
+
+    virtual value_type min_volume() const override{
+        return 0.0;
     }
 
 private:
@@ -224,6 +230,10 @@ public:
 
     virtual value_type min_area() const override{
         return _min_radius*_min_radius*M_PI;
+    }
+
+    virtual value_type min_volume() const override{
+        return 0.0;
     }
 
     virtual std::unique_ptr<shape_base<value_type>> new_shape() const override {
@@ -331,6 +341,10 @@ public:
         return 0.1;
     }
 
+    virtual value_type min_volume() const override {
+        return 0.0;
+    }
+
     virtual std::unique_ptr<shape_base<value_type>> new_shape() const override {
         auto& pos_x = *this->_distributions.at("pos_x").get();
         auto& pos_y = *this->_distributions.at("pos_y").get();
@@ -356,6 +370,76 @@ private:
     value_type _max_rotation;
 };
 
+class sphere_input : public rve_shape_input
+{
+public:
+    using value_type = double;
+
+    sphere_input():
+        _random_radius(),
+        _min_radius(),
+        _max_radius()
+    {}
+
+    sphere_input(bool const __random_position, bool const __random_radius, value_type const __min_radius, value_type const __max_radius, value_type const __volume_fraction, int const __number_of_shapes):
+        rve_shape_input(__volume_fraction, __number_of_shapes, __random_position),
+        _random_radius(__random_radius),
+        _min_radius(__min_radius),
+        _max_radius(__max_radius)
+    {}
+
+    virtual ~sphere_input(){}
+
+    inline auto set_random_radius(bool __val){
+        _random_radius = __val;
+    }
+
+    inline auto is_random_radius()const{
+        return _random_radius;
+    }
+
+    inline auto get_radius_min()const{
+        return _min_radius;
+    }
+
+    inline auto get_radius_max()const{
+        return _max_radius;
+    }
+
+    inline auto set_radius_min(double const __val){
+        _min_radius = __val;
+    }
+
+    inline auto set_radius_max(double const __val){
+        _max_radius = __val;
+    }
+
+    virtual value_type min_area() const override{
+        return 0;
+    }
+
+    virtual value_type min_volume() const override{
+        return _min_radius*_min_radius*_min_radius*M_PI*4/3;
+    }
+
+    virtual std::unique_ptr<shape_base<value_type>> new_shape() const override {
+        auto& pos_x = *this->_distributions.at("pos_x").get();
+        auto& pos_y = *this->_distributions.at("pos_y").get();
+        auto& pos_z = *this->_distributions.at("pos_z").get();
+        auto& radius = *this->_distributions.at("radius").get();
+
+        auto shape = std::make_unique<sphere<value_type>>();
+        shape.get()->radius() = radius();
+        shape.get()->point() = {pos_x(), pos_y(), pos_z()};
+        return shape;
+    }
+
+private:
+    bool _random_radius;
+    value_type _min_radius;
+    value_type _max_radius;
+};
+
 class cylinder_input : public rve_shape_input
 {
 public:
@@ -373,9 +457,9 @@ public:
     cylinder_input(bool const __random_position, bool const __random_radius, bool const __random_height, value_type const __min_radius, value_type const __max_radius, value_type const __min_height, value_type const __max_height,value_type const __volume_fraction, int const __number_of_shapes):
         rve_shape_input(__volume_fraction, __number_of_shapes, __random_position),
         _random_radius(__random_radius),
+        _random_height(__random_height),
         _min_radius(__min_radius),
         _max_radius(__max_radius),
-        _random_height(__random_height),
         _min_height(__min_height),
         _max_height(__max_height)
     {}
@@ -430,14 +514,25 @@ public:
         _max_height = __val;
     }
 
-    virtual value_type min_area() const {
-        return 0.1;
+    virtual value_type min_area() const override {
+        return 0.0;
+    }
+
+    virtual value_type min_volume() const override {
+        return _min_radius*_min_radius*M_PI*_min_height;
     }
 
     virtual std::unique_ptr<shape_base<value_type>> new_shape() const override {
+        auto& pos_x = *this->_distributions.at("pos_x").get();
+        auto& pos_y = *this->_distributions.at("pos_y").get();
+        auto& pos_z = *this->_distributions.at("pos_z").get();
+        auto& radius = *this->_distributions.at("radius").get();
+        auto& height = *this->_distributions.at("height").get();
 
-        auto shape = std::make_unique<rectangle<value_type>>();
-
+        auto shape = std::make_unique<cylinder<value_type>>();
+        shape.get()->radius() = radius();
+        shape.get()->height() = height();
+        shape.get()->point() = {pos_x(), pos_y(), pos_z()};
         return shape;
     }
 
@@ -595,8 +690,12 @@ public:
         _max_rotation_z = __val;
     }
 
-    virtual value_type min_area() const {
+    virtual value_type min_area() const override {
         return 0.1;
+    }
+
+    virtual value_type min_volume() const override {
+        return _min_radius_a*_min_radius_b*_min_radius_c*M_PI*4/3;
     }
 
     virtual std::unique_ptr<shape_base<value_type>> new_shape() const override {

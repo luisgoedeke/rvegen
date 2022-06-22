@@ -52,6 +52,10 @@ public:
         return _radius*_radius*M_PI;
     }
 
+    virtual value_type volume()const override{
+        return 0.0;
+    }
+
     value_type max_expansion()const{
         return _radius;
     }

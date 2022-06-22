@@ -106,11 +106,11 @@ public:
         return _rotation_z;
     }
 
-    value_type area()const{
+    virtual value_type area()const{
         return _radius_a*_radius_b*M_PI;
     }
 
-    value_type volume()const{
+    virtual value_type volume()const{
         return (4/3*_radius_a*_radius_b*_radius_c*M_PI);
     }
 

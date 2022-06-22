@@ -539,15 +539,41 @@ template<typename T>
 auto collision_details(cylinder<T> const& lhs, cylinder<T> const& rhs){
     const auto a{lhs.radius() + rhs.radius()};
     const auto dx = lhs(0) - rhs(0);
-    const auto dy = lhs(1) - rhs(1);
-    const auto start_lhs = lhs(2);
-    const auto end_lhs = lhs(2)+lhs.height();
-    const auto start_rhs = rhs(2);
-    const auto end_rhs = rhs(2)+rhs.height();
-    if (a * a > (dx * dx + dy * dy)){
+    const auto dz = lhs(2) - rhs(2);
+    const auto start_lhs = lhs(1);
+    const auto end_lhs = lhs(1)+lhs.height();
+    const auto start_rhs = rhs(1);
+    const auto end_rhs = rhs(1)+rhs.height();
+    if (a * a >= (dx * dx + dz * dz)){
         return !((end_lhs < start_rhs)||start_lhs > end_rhs);
     }
     return false;
+}
+
+template<typename T>
+bool bounding_overlap_check(box_bounding<T> const& lhs, box_bounding<T> const& rhs){
+    const auto& lhs_top{lhs.top_point()};
+    const auto& rhs_top{rhs.top_point()};
+    const auto& lhs_bottom{lhs.bottom_point()};
+    const auto& rhs_bottom{rhs.bottom_point()};
+
+    return ((lhs_bottom[0] <= rhs_top[0] && lhs_top[0] >= rhs_bottom[0]) &&
+            (lhs_bottom[1] <= rhs_top[1] && lhs_top[1] >= rhs_bottom[1]));
+}
+
+template<typename T>
+bool bounding_overlap_check(rectangle_bounding<T> const& lhs, rectangle_bounding<T> const& rhs){
+    const auto& lhs_top{lhs.top_point()};
+    const auto& rhs_top{rhs.top_point()};
+    const auto& lhs_bottom{lhs.bottom_point()};
+    const auto& rhs_bottom{rhs.bottom_point()};
+
+    return (((lhs_bottom[0] >= rhs_bottom[0]) && (lhs_bottom[0] <= rhs_top[0]))||
+           ((rhs_bottom[0] >= lhs_bottom[0]) && (rhs_bottom[0] <= lhs_top[0]))||
+           ((lhs_top[0] >= rhs_bottom[0]) && (lhs_top[0] <= rhs_top[0]))||
+           ((rhs_top[0] >= lhs_bottom[0]) && (rhs_top[0] <= lhs_top[0]))||
+           ((lhs_bottom[0] <= rhs_bottom[0]) && (lhs_top[0] >= rhs_top[0]))||
+           ((rhs_bottom[0] <= lhs_bottom[0]) && (rhs_top[0] >= lhs_top[0])));
 }
 
 template<typename T>
@@ -642,6 +668,30 @@ bool collision(std::vector<_PTR<shape_base<_T>>> const& __shapes, shape_base<_T>
                 throw std::runtime_error("collision(): no matching shape type");
             }
         }
+    }else if(dynamic_cast<sphere<_T>*>(__shape)){
+        for(const auto& shape : __shapes){
+            if(dynamic_cast<sphere<_T>*>(shape.get())){
+                //check distance
+                if(collision_details(*static_cast<sphere<_T>*>(__shape), *static_cast<sphere<_T>*>(shape.get()))){
+                    //collision
+                    return true;
+                }
+            }else{
+                throw std::runtime_error("collision(): no matching shape type");
+            }
+        }
+    }else if(dynamic_cast<cylinder<_T>*>(__shape)){
+        for(const auto& shape : __shapes){
+            if(dynamic_cast<cylinder<_T>*>(shape.get())){
+                //check distance
+                if(collision_details(*static_cast<cylinder<_T>*>(__shape), *static_cast<cylinder<_T>*>(shape.get()))){
+                    //collision
+                    return true;
+                }
+            }else{
+                throw std::runtime_error("collision(): no matching shape type");
+            }
+        }
     }else {
         throw std::runtime_error("collision(): no matching shape type");
     }
@@ -679,19 +729,19 @@ bool box_collision(std::vector<_PTR<shape_base<_T>>> const& __shapes, shape_base
         for(const auto& shape : __shapes){
             if(dynamic_cast<rectangle<_T>*>(shape.get())){
                 //check distance
-                if(collision_details(*static_cast<circle<_T>*>(__shape), *static_cast<rectangle<_T>*>(shape.get()))){
+                if(collision_details(*static_cast<rectangle_bounding<_T>*>(__shape->bounding_box()), *static_cast<rectangle_bounding<_T>*>(shape->bounding_box()))){
                     //collision
                     return true;
                 }
             }else if(dynamic_cast<circle<_T>*>(shape.get())){
                 //check distance
-                if(collision_details(*static_cast<circle<_T>*>(__shape), *static_cast<circle<_T>*>(shape.get()))){
+                if(collision_details(*static_cast<rectangle_bounding<_T>*>(__shape->bounding_box()), *static_cast<rectangle_bounding<_T>*>(shape->bounding_box()))){
                     //collision
                     return true;
                 }
             }else if(dynamic_cast<ellipse<_T>*>(shape.get())){
                 //check distance
-                if(collision_details(*static_cast<circle<_T>*>(__shape), *static_cast<ellipse<_T>*>(shape.get()))){
+                if(collision_details(*static_cast<rectangle_bounding<_T>*>(__shape->bounding_box()), *static_cast<rectangle_bounding<_T>*>(shape->bounding_box()))){
                     //collision
                     return true;
                 }
@@ -703,19 +753,19 @@ bool box_collision(std::vector<_PTR<shape_base<_T>>> const& __shapes, shape_base
         for(const auto& shape : __shapes){
             if(dynamic_cast<rectangle<_T>*>(shape.get())){
                 //check distance
-                if(collision_details(*static_cast<ellipse<_T>*>(__shape), *static_cast<rectangle<_T>*>(shape.get()))){
+                if(collision_details(*static_cast<rectangle_bounding<_T>*>(__shape->bounding_box()), *static_cast<rectangle_bounding<_T>*>(shape->bounding_box()))){
                     //collision
                     return true;
                 }
             }else if(dynamic_cast<circle<_T>*>(shape.get())){
                 //check distance
-                if(collision_details(*static_cast<ellipse<_T>*>(__shape), *static_cast<circle<_T>*>(shape.get()))){
+                if(collision_details(*static_cast<rectangle_bounding<_T>*>(__shape->bounding_box()), *static_cast<rectangle_bounding<_T>*>(shape->bounding_box()))){
                     //collision
                     return true;
                 }
             }else if(dynamic_cast<ellipse<_T>*>(shape.get())){
                 //check distance
-                if(collision(*static_cast<ellipse<_T>*>(__shape), *static_cast<ellipse<_T>*>(shape.get()))){
+                if(collision_details(*static_cast<rectangle_bounding<_T>*>(__shape->bounding_box()), *static_cast<rectangle_bounding<_T>*>(shape->bounding_box()))){
                     //collision
                     return true;
                 }

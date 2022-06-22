@@ -24,6 +24,8 @@ public:
 
     virtual value_type area() const = 0;
 
+    virtual value_type volume() const = 0;
+
     virtual void make_bounding_box() = 0;
 
     virtual value_type max_expansion()const = 0;
