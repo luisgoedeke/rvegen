@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <math.h>
 #include "shape_base.h"
+#include "box_bounding.h"
 
 namespace rvegen {
 
@@ -58,30 +59,20 @@ public:
         return _height;
     }
 
-    value_type area()const{
+    virtual value_type area()const{
         return _radius*_radius*M_PI;
     }
 
-    value_type volume() const {
+    virtual value_type volume() const {
         return _radius*_radius*M_PI*_height;
     }
 
     value_type max_expansion()const{
-        if (_height/2 > _radius){
-            return _height;
-        }
-        else{
             return _radius;
-        }
     }
 
     value_type& max_expansion(){
-        if (_height/2 > _radius){
-            return _height;
-        }
-        else{
             return _radius;
-        }
     }
 
     std::array<T,3> get_middle_point()const override{
@@ -90,19 +81,29 @@ public:
 
     void set_middle_point(std::array<T,3> middle_point){
         _point[0] = middle_point[0];
-        _point[1] = middle_point[1];
+        _point[1] = 0;
         _point[2] = middle_point[2];
     }
 
-    void move(value_type x, value_type y, value_type z)const{
-        _point[0] = x;
-        _point[1] = y;
-        _point[2] = z;
+    constexpr inline auto const& point()const{
+        return _point;
     }
 
-    virtual void make_bounding_box() override {
-
+    constexpr inline auto& point(){
+        return _point;
     }
+
+    std::unique_ptr<box_bounding<value_type>> bounding_box(){
+        return this->bounding_box();
+    }
+
+    virtual void make_bounding_box() override{
+        auto box_ptr = std::make_unique<box_bounding<value_type>>();
+        box_ptr.get()->top_point() = {_point[0] + _radius,  _point[1] + _height, _point[2] + _radius};
+        box_ptr.get()->bottom_point() = {_point[0] - _radius,  _point[1], _point[2] - _radius};
+        this->_bounding_box = std::move(box_ptr);
+    }
+
 private:
     std::array<value_type, 3> _point;
     value_type _radius;

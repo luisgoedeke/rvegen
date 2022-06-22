@@ -46,11 +46,12 @@ public:
     using size_type = std::size_t;
 
 
-    rve_generator(rveType const __rve_type = rveType::OnlyInsideSamepackHeuristic, std::size_t const __dimension = 2, value_type const _x = 1, value_type const _y = 1, value_type const _z = 1):
+    rve_generator(rveType const __rve_type = rveType::OnlyInsideSamepackHeuristic, std::size_t const __dimension = 3, value_type const _x = 1, value_type const _y = 1, value_type const _z = 1):
         _rve_type(__rve_type),
         _dim(__dimension),
         _max_iter(50000),
         _vol_frac_inclusion(0),
+        number_of_shapes(0),
         _box{_x,_y,_z}
     {}
 
@@ -127,6 +128,22 @@ public:
         return _rve_type;
     }
 
+    constexpr inline int get_number_of_shapes()const{
+        return number_of_shapes;
+    }
+
+    constexpr inline int& get_number_of_shapes(){
+        return number_of_shapes;
+    }
+
+    constexpr inline auto get_vol_frac_inclusion()const{
+        return _vol_frac_inclusion;
+    }
+
+    constexpr inline auto& get_vol_frac_inclusion(){
+        return _vol_frac_inclusion;
+    }
+
 private:
 
     template<typename _Generator>
@@ -142,6 +159,7 @@ private:
         }else if(_rve_type == rveType::OnlyInsideSamepackHeuristic){
             compute_multiple_inclusion_stuff_only_inside_samepack_heuristic(__input_shape, __random_generator);
         }
+        number_of_shapes = _shapes.size();
     }
 
 
@@ -158,6 +176,7 @@ private:
         }else if(_rve_type == rveType::OnlyInsideSamepackHeuristic){
             compute_inclusion_stuff_only_inside_samepack_heuristic(__input_shape, __random_generator);
         }
+        number_of_shapes = _shapes.size();
     }
 
     template<typename _Generator>
@@ -232,6 +251,7 @@ private:
     size_type _dim;
     size_type _max_iter;
     value_type _vol_frac_inclusion;
+    int number_of_shapes;
     std::array<value_type, 3> _box;
     std::vector<std::unique_ptr<shape_base<value_type>>> _shapes;
     std::vector<std::pair<value_type, std::unique_ptr<shape_base<value_type>>>> _generated_shapes;
@@ -614,8 +634,9 @@ constexpr inline auto rve_generator<_Distribution>::compute_inclusion_stuff_only
     size_type iter{0};
 
     const value_type volume_fraction{__input_shape->get_volume_fraction()};
+    const value_type volume{__input_shape->min_volume()};
     const value_type area{__input_shape->min_area()};
-    const size_type max_inclusions{static_cast<size_type>((_box[0]*_box[1]*volume_fraction)/area)};
+
     _vol_frac_inclusion = 0;
     int number_of_shapes = __input_shape->get_number_of_shapes();
 
@@ -623,31 +644,36 @@ constexpr inline auto rve_generator<_Distribution>::compute_inclusion_stuff_only
     _generated_shapes.clear();
 
     //reserve data for faster push back of new elements
-    _shapes.reserve(max_inclusions);
+    if (dimension()==2){
+        const size_type max_inclusions{static_cast<size_type>((_box[0]*_box[1]*volume_fraction)/area)};
+        _shapes.reserve(max_inclusions);
+    }
+    if (dimension()==3){
+        const size_type max_inclusions{static_cast<size_type>((_box[0]*_box[1]*_box[2]*volume_fraction)/volume)};
+        _shapes.reserve(max_inclusions);
+    }
+
     _generated_shapes.reserve(number_of_shapes);
 
-    generate_shapes(number_of_shapes, __input_shape, _generated_shapes);
+    generate_shapes(number_of_shapes, dimension(), __input_shape, _generated_shapes);
 
     sort_shapes(_generated_shapes);
 
     int AnzahlBereiche = 4;
     bool right_size = check_size(AnzahlBereiche, _generated_shapes);
 
-//    if(right_size == false){
-//        return;
-//    }
-
     set_sections(AnzahlBereiche, number_of_shapes, sections);
 
     int AnzahlDurchläufeGesamt = 10;
     int FehlversucheFrei = 0;
-    int FehlversucheSeitenMax = 1000;
+    int FehlversucheSeitenMax = 100;
     int FehlversucheFreiMax = 1000;
+    int DurchläufeGravitationMax = 10;
 
     //Durchgänge gesamt
-    for (int i=0;i<100;i++){
+    for (int i=0;i<AnzahlDurchläufeGesamt;i++){
        //Bereiche
-        for (int j=0;j<4;j++){
+        for (int j=0;j<AnzahlBereiche;j++){
            fill_sides(dimension(), j, FehlversucheSeitenMax, sections, _shapes, _generated_shapes);
            while (FehlversucheFrei <= FehlversucheFreiMax){
                  if (!arrange_next(dimension(), j, sections, _shapes, _generated_shapes)){
@@ -659,8 +685,22 @@ constexpr inline auto rve_generator<_Distribution>::compute_inclusion_stuff_only
             }
            FehlversucheFrei = 0;
         }
+        for (int i=0; i<DurchläufeGravitationMax; i++){
+          add_gravity(dimension(),_shapes);
+        }
     }
-//    add_gravity(dimension(),_shapes);
+
+    _vol_frac_inclusion = 0.0;
+
+    for (int i=0; i<_shapes.size();i++){
+        if (dimension() == 2){
+         _vol_frac_inclusion += (_shapes[i].get()->area())/_box[0]*_box[1];
+        }
+        if (dimension() == 3){
+         _vol_frac_inclusion += (_shapes[i].get()->volume())/_box[0]*_box[1]*_box[2];
+        }
+    }
+
 /*
 #ifdef RVE_DEBUG
         std::cout<<"iter "<<iter<<" volume fraction "<<_vol_frac_inclusion<<" error "<<(volume_fraction - (_vol_frac_inclusion/(_box[0]*_box[1])))<<std::endl;

@@ -24,12 +24,16 @@
 namespace rvegen {
 
 template<typename T>
-void generate_shapes(int number, rve_shape_input* __input, std::vector<std::pair<T, std::unique_ptr<shape_base<T>>>>& shapes){
+void generate_shapes(int number, int dimension, rve_shape_input* __input, std::vector<std::pair<T, std::unique_ptr<shape_base<T>>>>& shapes){
     using value_type = T;
     for (int i=1; i <= number; i++){
        auto new_shape = __input->new_shape();
-//       new_shape.get()->make_bounding_box();
-       shapes.emplace_back(new_shape.get()->area(),std::move(new_shape));
+       if (dimension ==2){
+          shapes.emplace_back(new_shape.get()->area(),std::move(new_shape));
+       }else{
+          shapes.emplace_back(new_shape.get()->volume(),std::move(new_shape));
+       }
+
     }
 }
 
@@ -79,7 +83,6 @@ template<typename T>
 void fill_sides(int dimension, int j, int FehlversucheSeitenMax, std::vector<std::pair<int, int>>& sections, std::vector<std::unique_ptr<shape_base<T>>>& _shapes, std::vector<std::pair<T, std::unique_ptr<shape_base<T>>>>& sorted_shapes){
     int FehlversucheSeiten = 0;
 
-    if (dimension == 2){
         while ((FehlversucheSeiten <= FehlversucheSeitenMax) && ((std::get<1>(sections[j])-std::get<0>(sections[j]))>0)){
             if (!arrange_bottom(dimension, j, sections, _shapes, sorted_shapes)){
                 FehlversucheSeiten++;
@@ -115,8 +118,26 @@ void fill_sides(int dimension, int j, int FehlversucheSeitenMax, std::vector<std
                 FehlversucheSeiten = 0;
             }
         }
-    }
+
     if (dimension == 3){
+        FehlversucheSeiten = 0;
+        while ((FehlversucheSeiten <= FehlversucheSeitenMax) && ((std::get<1>(sections[j])-std::get<0>(sections[j]))>0)){
+            if (!arrange_front(dimension, j, sections, _shapes, sorted_shapes)){
+                FehlversucheSeiten++;
+            }
+            else{
+                FehlversucheSeiten = 0;
+            }
+        }
+        FehlversucheSeiten = 0;
+        while ((FehlversucheSeiten <= FehlversucheSeitenMax) && ((std::get<1>(sections[j])-std::get<0>(sections[j]))>0)){
+            if (!arrange_back(dimension, j, sections, _shapes, sorted_shapes)){
+                FehlversucheSeiten++;
+            }
+            else{
+                FehlversucheSeiten = 0;
+            }
+        }
     }
 }
 
@@ -125,47 +146,46 @@ bool arrange_bottom(int dimension, int section, std::vector<std::pair<int, int>>
     using value_type = T;
     uniform_real_distribution<value_type> distribution;
 
-        srand(time(0));
-        int pos = (rand() % (std::get<1>(sections[section])-std::get<0>(sections[section])+1));
-        int position = pos+std::get<0>(sections[section]);
+            srand(time(0));
+            int pos = (rand() % (std::get<1>(sections[section])-std::get<0>(sections[section])+1));
+            int position = pos+std::get<0>(sections[section]);
 
-        //new coordinates
+            //new coordinates
 
-        std::array<value_type,3> pos_old = (std::get<1>(sorted_shapes[position]))->get_middle_point();
+            std::array<value_type,3> pos_old = (std::get<1>(sorted_shapes[position]))->get_middle_point();
 
-        std::array<value_type, 3 > min, max;
+            std::array<value_type, 3 > min, max;
 
-        if (dimension == 2){
-            min = {(std::get<1>(sorted_shapes[position]))->max_expansion(), (std::get<1>(sorted_shapes[position]))->max_expansion(), 0};
-            max = {1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 3*(std::get<1>(sorted_shapes[position]))->max_expansion(), 0};
-        }
+            if (dimension == 2){
+                min = {(std::get<1>(sorted_shapes[position]))->max_expansion(), (std::get<1>(sorted_shapes[position]))->max_expansion(), 0};
+                max = {1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 3*(std::get<1>(sorted_shapes[position]))->max_expansion(), 0};
+            }
 
-        if (dimension == 3){
-            min = {(std::get<1>(sorted_shapes[position]))->max_expansion(), (std::get<1>(sorted_shapes[position]))->max_expansion(), 0};
-            max = {1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 3*(std::get<1>(sorted_shapes[position]))->max_expansion(), 0};
-        }
+            if (dimension == 3){
+                min = {(std::get<1>(sorted_shapes[position]))->max_expansion(), (std::get<1>(sorted_shapes[position]))->max_expansion(), (std::get<1>(sorted_shapes[position]))->max_expansion()};
+                max = {1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 3*(std::get<1>(sorted_shapes[position]))->max_expansion()};
+            }
 
-        std::array<value_type, 3> pos_new;
+            std::array<value_type, 3> pos_new;
 
-        for (int i=0; i<3;i++){
-            distribution.set_parameter(min[i], max[i]);
-            pos_new[i] = distribution();
-        }
+            for (int i=0; i<3;i++){
+                distribution.set_parameter(min[i], max[i]);
+                pos_new[i] = distribution();
+            }
 
-        std::get<1>(sorted_shapes[position])->set_middle_point(pos_new);
+            std::get<1>(sorted_shapes[position])->set_middle_point(pos_new);
 
-        if(!box_collision(_shapes, std::get<1>(sorted_shapes[position]).get())){
-        std::get<1>(sorted_shapes[position])->make_bounding_box();
-        _shapes.emplace_back(std::move(std::get<1>(sorted_shapes[position])));
-        sorted_shapes.erase(sorted_shapes.begin()+position);
-        adjust_sections(section, sections);
-        return true;
-        }
-        else{
-            std::get<1>(sorted_shapes[position])->set_middle_point(pos_old);
-            return false;
-        }
-
+            if(!collision(_shapes, std::get<1>(sorted_shapes[position]).get())){
+            std::get<1>(sorted_shapes[position])->make_bounding_box();
+            _shapes.emplace_back(std::move(std::get<1>(sorted_shapes[position])));
+            sorted_shapes.erase(sorted_shapes.begin()+position);
+            adjust_sections(section, sections);
+            return true;
+            }
+            else{
+                std::get<1>(sorted_shapes[position])->set_middle_point(pos_old);
+                return false;
+            }
     }
 
 template<typename T>
@@ -188,8 +208,8 @@ bool arrange_right(int dimension, int section, std::vector<std::pair<int, int>>&
         }
 
         if (dimension == 3){
-            min = {1-3*(std::get<1>(sorted_shapes[position]))->max_expansion(), (std::get<1>(sorted_shapes[position]))->max_expansion(), 0};
-            max = {1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 0};
+            min = {1-3*(std::get<1>(sorted_shapes[position]))->max_expansion(), (std::get<1>(sorted_shapes[position]))->max_expansion(), (std::get<1>(sorted_shapes[position]))->max_expansion()};
+            max = {1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 1-(std::get<1>(sorted_shapes[position]))->max_expansion()};
         }
 
         std::array<value_type, 3> pos_new;
@@ -234,8 +254,8 @@ bool arrange_top(int dimension, int section, std::vector<std::pair<int, int>>& s
         }
 
         if (dimension == 3){
-            min = {(std::get<1>(sorted_shapes[position]))->max_expansion(), 1-3*(std::get<1>(sorted_shapes[position]))->max_expansion(), 0};
-            max = {1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 0};
+            min = {(std::get<1>(sorted_shapes[position]))->max_expansion(), (std::get<1>(sorted_shapes[position]))->max_expansion(), 1-3*(std::get<1>(sorted_shapes[position]))->max_expansion()};
+            max = {1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 1-(std::get<1>(sorted_shapes[position]))->max_expansion()};
         }
 
         std::array<value_type, 3> pos_new;
@@ -280,8 +300,8 @@ bool arrange_left(int dimension, int section, std::vector<std::pair<int, int>>& 
         }
 
         if (dimension == 3){
-            min = {(std::get<1>(sorted_shapes[position]))->max_expansion(), (std::get<1>(sorted_shapes[position]))->max_expansion(), 0};
-            max = {3*(std::get<1>(sorted_shapes[position]))->max_expansion(), 1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 0};
+            min = {(std::get<1>(sorted_shapes[position]))->max_expansion(), (std::get<1>(sorted_shapes[position]))->max_expansion(), (std::get<1>(sorted_shapes[position]))->max_expansion()};
+            max = {3*(std::get<1>(sorted_shapes[position]))->max_expansion(), 1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 1-(std::get<1>(sorted_shapes[position]))->max_expansion()};
         }
 
         std::array<value_type, 3> pos_new;
@@ -307,13 +327,93 @@ bool arrange_left(int dimension, int section, std::vector<std::pair<int, int>>& 
     }
 
 template<typename T>
-void arrange_front(){
+bool arrange_front(int dimension, int section, std::vector<std::pair<int, int>>& sections, std::vector<std::unique_ptr<shape_base<T>>>& _shapes,std::vector<std::pair<T, std::unique_ptr<shape_base<T>>>>& sorted_shapes){
     using value_type = T;
+    uniform_real_distribution<value_type> distribution;
+
+        srand(time(0));
+        int position = rand() % (std::get<1>(sections[section])-std::get<0>(sections[section])+1);
+
+        //new coordinates
+
+        auto pos_old = (std::get<1>(sorted_shapes[position]))->get_middle_point();
+
+        std::array<value_type, 3> min, max;
+
+        if (dimension == 2){
+            min = {(std::get<1>(sorted_shapes[position]))->max_expansion(), (std::get<1>(sorted_shapes[position]))->max_expansion(), 0};
+            max = {3*(std::get<1>(sorted_shapes[position]))->max_expansion(), 1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 0};
+        }
+
+        if (dimension == 3){
+            min = {(std::get<1>(sorted_shapes[position]))->max_expansion(), (std::get<1>(sorted_shapes[position]))->max_expansion(), (std::get<1>(sorted_shapes[position]))->max_expansion()};
+            max = {1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 3*(std::get<1>(sorted_shapes[position]))->max_expansion(), 1-(std::get<1>(sorted_shapes[position]))->max_expansion()};
+        }
+
+        std::array<value_type, 3> pos_new;
+
+        for (int i=0; i<3;i++){
+            distribution.set_parameter(min[i], max[i]);
+            pos_new[i] = distribution();
+        }
+
+        std::get<1>(sorted_shapes[position])->set_middle_point(pos_new);
+
+        if(!collision(_shapes, std::get<1>(sorted_shapes[position]).get())){
+        std::get<1>(sorted_shapes[position])->make_bounding_box();
+        _shapes.emplace_back(std::move(std::get<1>(sorted_shapes[position])));
+        sorted_shapes.erase(sorted_shapes.begin()+position);
+        adjust_sections(section, sections);
+        return true;
+        }else{
+            std::get<1>(sorted_shapes[position])->set_middle_point(pos_old);
+            return false;
+        }
     }
 
 template<typename T>
-void arrange_back(){
+bool arrange_back(int dimension, int section, std::vector<std::pair<int, int>>& sections, std::vector<std::unique_ptr<shape_base<T>>>& _shapes,std::vector<std::pair<T, std::unique_ptr<shape_base<T>>>>& sorted_shapes){
     using value_type = T;
+    uniform_real_distribution<value_type> distribution;
+
+        srand(time(0));
+        int position = rand() % (std::get<1>(sections[section])-std::get<0>(sections[section])+1);
+
+        //new coordinates
+
+        auto pos_old = (std::get<1>(sorted_shapes[position]))->get_middle_point();
+
+        std::array<value_type, 3> min, max;
+
+        if (dimension == 2){
+            min = {(std::get<1>(sorted_shapes[position]))->max_expansion(), (std::get<1>(sorted_shapes[position]))->max_expansion(), 0};
+            max = {3*(std::get<1>(sorted_shapes[position]))->max_expansion(), 1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 0};
+        }
+
+        if (dimension == 3){
+            min = {(std::get<1>(sorted_shapes[position]))->max_expansion(), 1-3*(std::get<1>(sorted_shapes[position]))->max_expansion(), (std::get<1>(sorted_shapes[position]))->max_expansion()};
+            max = {1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 1-(std::get<1>(sorted_shapes[position]))->max_expansion(), 1-(std::get<1>(sorted_shapes[position]))->max_expansion()};
+        }
+
+        std::array<value_type, 3> pos_new;
+
+        for (int i=0; i<3;i++){
+            distribution.set_parameter(min[i], max[i]);
+            pos_new[i] = distribution();
+        }
+
+        std::get<1>(sorted_shapes[position])->set_middle_point(pos_new);
+
+        if(!collision(_shapes, std::get<1>(sorted_shapes[position]).get())){
+        std::get<1>(sorted_shapes[position])->make_bounding_box();
+        _shapes.emplace_back(std::move(std::get<1>(sorted_shapes[position])));
+        sorted_shapes.erase(sorted_shapes.begin()+position);
+        adjust_sections(section, sections);
+        return true;
+        }else{
+            std::get<1>(sorted_shapes[position])->set_middle_point(pos_old);
+            return false;
+        }
     }
 
 template<typename T>
@@ -363,6 +463,7 @@ bool arrange_next(int dimension, int section, std::vector<std::pair<int, int>>& 
              value_type y_min = point_new_shape[1]-std::get<1>(sorted_shapes[position_new_shape])->max_expansion();
              value_type y_max = point_new_shape[1]+std::get<1>(sorted_shapes[position_new_shape])->max_expansion();
 
+             //Bedingung Only-Inside
              if ((x_min < 0)||(x_max > 1)||(y_min < 0)||(y_max > 1)){
                  return false;
              }
@@ -372,6 +473,18 @@ bool arrange_next(int dimension, int section, std::vector<std::pair<int, int>>& 
              point_new_shape[0] = point_existing_shape[0]+r*sin(theta)*cos(phi);
              point_new_shape[1] = point_existing_shape[1]+r*sin(theta)*sin(phi);
              point_new_shape[2] = point_existing_shape[2]+r*cos(theta);
+
+             value_type x_min = point_new_shape[0]-std::get<1>(sorted_shapes[position_new_shape])->max_expansion();
+             value_type x_max = point_new_shape[0]+std::get<1>(sorted_shapes[position_new_shape])->max_expansion();
+             value_type y_min = point_new_shape[1]-std::get<1>(sorted_shapes[position_new_shape])->max_expansion();
+             value_type y_max = point_new_shape[1]+std::get<1>(sorted_shapes[position_new_shape])->max_expansion();
+             value_type z_min = point_new_shape[2]-std::get<1>(sorted_shapes[position_new_shape])->max_expansion();
+             value_type z_max = point_new_shape[2]+std::get<1>(sorted_shapes[position_new_shape])->max_expansion();
+
+             //Bedingung Only-Inside
+             if ((x_min < 0)||(x_max > 1)||(y_min < 0) || (y_max > 1) || (z_min < 0 ) || (z_max > 1)){
+                 return false;
+             }
          }
 
          std::get<1>(sorted_shapes[position_new_shape])->set_middle_point(point_new_shape);
@@ -398,53 +511,161 @@ void add_gravity(int dimension, std::vector<std::unique_ptr<shape_base<T>>>& _sh
 
     std::vector<std::pair<value_type, std::unique_ptr<shape_base<T>>>> _shapes_height;
 
-    altitude_sort(dimension, _shapes, _shapes_height);
+    generate_altitude_sorted(dimension, _shapes, _shapes_height);
+
+    for (int i=0; i < _shapes_height.size(); i++){
+        move_geometry(dimension, i, _shapes_height);
+    }
+
+    write_shapes_back(_shapes, _shapes_height);
 
 }
 
 template<typename T>
-void altitude_sort(int dimension, std::vector<std::unique_ptr<shape_base<T>>>& _shapes, std::vector<std::pair<T, std::unique_ptr<shape_base<T>>>>& _shapes_height){
+void write_shapes_back(std::vector<std::unique_ptr<shape_base<T>>>& _shapes, std::vector<std::pair<T, std::unique_ptr<shape_base<T>>>>& _shapes_height){
+    while (!_shapes_height.empty()){
+        _shapes.emplace_back(std::move(std::get<1>(_shapes_height[0])));
+        _shapes_height.erase(_shapes_height.begin());
+    }
+}
+
+template<typename T>
+void generate_altitude_sorted(int dimension, std::vector<std::unique_ptr<shape_base<T>>>& _shapes, std::vector<std::pair<T, std::unique_ptr<shape_base<T>>>>& _shapes_height){
     using value_type = T;
 
     if (dimension == 2){
         //y = Höhe
-        for (int i=0; i<_shapes.size();i++){
-            std::array<T,3> coordinates = _shapes[i].get()->get_middle_point();
+        while (!_shapes.empty()){
+            std::array<T,3> coordinates = _shapes[0].get()->get_middle_point();
             value_type height = coordinates[1];
-            _shapes_height.emplace_back(height, std::move(_shapes[i]));
-
-            auto lambda = [](const auto & __a, const auto & __b){
-                return __a.first < __b.first;
-            };
-            std::sort(_shapes_height.begin(), _shapes_height.end(), lambda);
+            _shapes_height.emplace_back(height, std::move(_shapes[0]));
+            _shapes.erase(_shapes.begin());
         }
+        altitude_sort(_shapes_height);
     }
     if (dimension == 3){
         //z= Höhe
-        for (int i=0; i<_shapes.size();i++){
-            std::array<T,3> coordinates = _shapes[i].get()->get_middle_point();
+        while (!_shapes.empty()){
+            std::array<T,3> coordinates = _shapes[0].get()->get_middle_point();
             value_type height = coordinates[2];
-            _shapes_height.emplace_back(height, std::move(_shapes[i]));
-
-            auto lambda = [](const auto & __a, const auto & __b){
-                return __a.first < __b.first;
-            };
-            std::sort(_shapes_height.begin(), _shapes_height.end(), lambda);
+            _shapes_height.emplace_back(height, std::move(_shapes[0]));
+            _shapes.erase(_shapes.begin());
         }
+        altitude_sort(_shapes_height);
     }
   }
 
 template<typename T>
-void move_geometries(int dimension, std::vector<std::pair<T, std::unique_ptr<shape_base<T>>>>& _shapes_height){
+void altitude_sort(std::vector<std::pair<T, std::unique_ptr<shape_base<T>>>>& _shapes_height){
+    using value_type = T;
+        auto lambda = [](const auto & __a, const auto & __b){
+            return __a.first < __b.first;
+        };
+        std::sort(_shapes_height.begin(), _shapes_height.end(), lambda);
+    }
+
+template<typename T>
+void move_geometry(int dimension, int vector_position, std::vector<std::pair<T, std::unique_ptr<shape_base<T>>>>& _shapes_height){
     using value_type = T;
 
+    std::vector<std::unique_ptr<shape_base<T>>> shapes_with_overlapping_boxes;
+    //Position der Koordinate für die Höhe
+    int position_height;
+
     if (dimension == 2){
-        //y = Höhe
+        // y= Höhe
+        position_height = 1;
+
+        for (int i=0; i < vector_position; i++){
+            //Alle Geometrien finden, die sich unterhalb der zu bewegenden Geometrie befinden und diese in den neuen Vektor einordnen
+            if(bounding_overlap_check(*static_cast<rectangle_bounding<T>*> (std::get<1>(_shapes_height[i])->bounding_box()), *static_cast<rectangle_bounding<T>*> (std::get<1>(_shapes_height[vector_position])->bounding_box()))){
+                shapes_with_overlapping_boxes.emplace_back(std::move(std::get<1>(_shapes_height[i])));
+                _shapes_height.erase(_shapes_height.begin()+i);
+                i--;
+                vector_position--;
+            }
+        }
     }
+
     if (dimension == 3){
         //z= Höhe
+        position_height = 2;
 
+        for (int i=0; i < vector_position; i++){
+            //Alle Geometrien finden, die sich unterhalb der zu bewegenden Geometrie befinden und diese in den neuen Vektor einordnen
+            if(bounding_overlap_check(*static_cast<box_bounding<T>*> (std::get<1>(_shapes_height[i])->bounding_box()), *static_cast<box_bounding<T>*> (std::get<1>(_shapes_height[vector_position])->bounding_box()))){
+                shapes_with_overlapping_boxes.emplace_back(std::move(std::get<1>(_shapes_height[i])));
+                _shapes_height.erase(_shapes_height.begin()+i);
+                i--;
+                vector_position--;
+            }
+        }
     }
+
+        //Maximale Versuche um das Objekt nach unten zu verschieben
+        int max_attempts = 10;
+        int attempts = 0;
+
+        while(attempts < max_attempts){
+
+            if(!shapes_with_overlapping_boxes.empty()){
+                value_type expansion_max = std::get<1>(_shapes_height[vector_position])->max_expansion();
+
+                std::array<T,3> current_position = std::get<1>(_shapes_height[vector_position])->get_middle_point();
+                std::array<T,3> position_highest_shape = shapes_with_overlapping_boxes[shapes_with_overlapping_boxes.size()-1]->get_middle_point();
+
+                uniform_real_distribution<value_type> distribution;
+                distribution.set_parameter(position_highest_shape[position_height], current_position[position_height]);
+
+                value_type height_old = current_position[position_height];
+                std::array<T,3> bot_p = std::get<1>(_shapes_height[vector_position])->bounding_box()->bottom_point();
+                std::array<T,3> top_p = shapes_with_overlapping_boxes[shapes_with_overlapping_boxes.size()-1]->bounding_box()->top_point();
+                value_type distance_bounding = bot_p[position_height]-top_p[position_height];
+                value_type height_new;
+
+               if (distance_bounding > 0){
+                  height_new = current_position[position_height]-distance_bounding;
+                }else{
+                  height_new = distribution();
+                }
+
+
+                current_position[position_height] = height_new;
+
+                //OnlyInside
+                if((current_position[position_height]-expansion_max)>0){
+                  std::get<1>(_shapes_height[vector_position])->set_middle_point(current_position);
+                  std::get<1>(_shapes_height[vector_position])->make_bounding_box();
+                  if(collision(shapes_with_overlapping_boxes, std::get<1>(_shapes_height[vector_position]).get())){
+                      current_position[position_height] = height_old;
+                      std::get<1>(_shapes_height[vector_position])->set_middle_point(current_position);
+                      std::get<1>(_shapes_height[vector_position])->make_bounding_box();
+                  }
+                  attempts++;
+                }
+                else{
+
+                    attempts++;
+                }
+            }else{
+                //Behandlung für unterste Reihe
+                std::array<T,3> current_position = std::get<1>(_shapes_height[vector_position])->get_middle_point();
+                value_type height_old = current_position[position_height];
+                uniform_real_distribution<value_type> distribution;
+                distribution.set_parameter(std::get<1>(_shapes_height[vector_position])->max_expansion(), 1.2*std::get<1>(_shapes_height[vector_position])->max_expansion());
+                value_type height_new = distribution();
+                current_position[position_height] = std::min(height_old, height_new);
+                std::get<1>(_shapes_height[vector_position])->set_middle_point(current_position);
+                attempts++;
+            }
+        }
+        while(!shapes_with_overlapping_boxes.empty()){
+            std::array<T,3> middle_point = (shapes_with_overlapping_boxes[0]).get()->get_middle_point();
+            value_type middle_point_height = middle_point[position_height];
+            _shapes_height.emplace_back(middle_point_height, std::move(shapes_with_overlapping_boxes[0]));
+            shapes_with_overlapping_boxes.erase(shapes_with_overlapping_boxes.begin());
+            }
+            altitude_sort(_shapes_height);
   }
 
 }

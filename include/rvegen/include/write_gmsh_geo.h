@@ -7,6 +7,7 @@
 #include "circle.h"
 #include "ellipse.h"
 #include "cylinder.h"
+#include "sphere.h"
 #include "ellipsoid.h"
 #include "rectangle.h"
 #include "box_bounding.h"
@@ -72,6 +73,9 @@ private:
     inline void write_file_2D(std::fstream & __file, _RVE const& __rve){
         const auto [x_box, y_box, z_box]{__rve.box()};
         const auto& shapes{__rve.shapes()};
+
+        __file<<"//Number of shapes: "<<__rve.get_number_of_shapes()<<std::endl;
+        __file<<"//Volume fraction: "<<__rve.get_vol_frac_inclusion()<<std::endl;
 
         __file<<"SetFactory(\"OpenCASCADE\");"<<std::endl;
         __file<<"Rectangle(1) = {0, 0, 0, "<<x_box<<", "<<y_box<<", 0};"<<std::endl;
@@ -151,6 +155,9 @@ private:
         const auto [x_box, y_box, z_box]{__rve.box()};
         const auto& shapes{__rve.shapes()};
 
+        __file<<"//Number of shapes: "<<__rve.get_number_of_shapes()<<std::endl;
+        __file<<"//Volume fraction: "<<__rve.get_vol_frac_inclusion()<<std::endl;
+
         __file<<"SetFactory(\"OpenCASCADE\");"<<std::endl;
         __file<<"Mesh.CharacteristicLengthMin = 0;"<<std::endl;
         __file<<"Mesh.CharacteristicLengthMax = 0.05;"<<std::endl;
@@ -162,7 +169,7 @@ private:
         for(size_t i{0}; i<shapes.size(); ++i){
             if(dynamic_cast<cylinder<value_typ>*>(shapes[i].get())){
                 const auto& data{*static_cast<cylinder<value_typ>*>(shapes[i].get())};
-                __file<<"Cylinder("<<start+i<<") = {"<<data(0)<<","<<data(1)<<","<<data(2)<<", 0, 0, "<<data.height()<<", "<<data.radius()<<", 2*Pi};"<<std::endl;
+                __file<<"Cylinder("<<start+i<<") = {"<<data(0)<<","<<data(1)<<","<<data(2)<<", 0," <<data.height()<<", "<<"0"<<", "<<data.radius()<<", 2*Pi};"<<std::endl;
 
             }else if(dynamic_cast<ellipsoid<value_typ>*>(shapes[i].get())){
                 const auto& data{*static_cast<ellipsoid<value_typ>*>(shapes[i].get())};
@@ -172,17 +179,20 @@ private:
                 __file<<"Rotate {{0, 1, 0}, {0, 0, 0}, -"<<data.rotation_y()<<"*2*Pi} {Volume{"<<start+i<<"};}"<<std::endl;
                 __file<<"Rotate {{0, 0, 1}, {0, 0, 0}, -"<<data.rotation_z()<<"*2*Pi} {Volume{"<<start+i<<"};}"<<std::endl;
                 __file<<"Translate{"<<data(0)<<", "<<data(1)<<", "<<data(2)<<"} {Volume{"<<start+i<<"};}"<<std::endl;
+            }else if (dynamic_cast<sphere<value_typ>*>(shapes[i].get())){
+                 const auto& data{*static_cast<sphere<value_typ>*>(shapes[i].get())};
+                __file<<"Sphere("<<start+i<<") = {"<<data(0)<<", "<<data(1)<<", "<<data(2)<<", "<<data.radius()<<"};"<<std::endl;
             }else{
                 throw std::runtime_error("write_gmsh_geo::write_file_3D(): no matching shape type");
             }
         }
 
         for(size_t i{0};i<shapes.size();++i){
-            __file<<"BooleanIntersection{ Volume{1}; }{ Volume{"<<i+2<<"}; Delete; }"<<std::endl;
+//            __file<<"BooleanIntersection{ Volume{1}; }{ Volume{"<<i+2<<"}; Delete; }"<<std::endl;
         }
 
         for(size_t i{0};i<shapes.size();++i){
-            __file<<"BooleanDifference{ Volume{1}; Delete; }{ Volume{"<<i+2<<"}; }"<<std::endl;
+//            __file<<"BooleanDifference{ Volume{1}; Delete; }{ Volume{"<<i+2<<"}; }"<<std::endl;
         }
     }
 };

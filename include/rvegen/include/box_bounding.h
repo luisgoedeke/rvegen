@@ -32,19 +32,19 @@ public:
 
     virtual ~box_bounding(){}
 
-    constexpr inline auto const& top_point()const{
+    virtual inline std::array<value_type, 3> const& top_point()const{
         return _top;
     }
 
-    constexpr inline auto const& bottom_point()const{
+    virtual inline std::array<value_type, 3> const& bottom_point()const{
         return _bottom;
     }
 
-    constexpr inline auto& top_point(){
+    virtual inline std::array<value_type, 3>& top_point(){
         return _top;
     }
 
-    constexpr inline auto& bottom_point(){
+    virtual inline std::array<value_type, 3>& bottom_point(){
         return _bottom;
     }
 private:
