@@ -440,12 +440,12 @@ private:
     value_type _max_radius;
 };
 
-class cylinder_input : public rve_shape_input
+class cylinder_lf_input : public rve_shape_input
 {
 public:
     using value_type = double;
 
-    cylinder_input():
+    cylinder_lf_input():
         _random_radius(),
         _random_height(),
         _min_radius(),
@@ -454,7 +454,7 @@ public:
         _max_height()
     {}
 
-    cylinder_input(bool const __random_position, bool const __random_radius, bool const __random_height, value_type const __min_radius, value_type const __max_radius, value_type const __min_height, value_type const __max_height,value_type const __volume_fraction, int const __number_of_shapes):
+    cylinder_lf_input(bool const __random_position, bool const __random_radius, bool const __random_height, value_type const __min_radius, value_type const __max_radius, value_type const __min_height, value_type const __max_height,value_type const __volume_fraction, int const __number_of_shapes):
         rve_shape_input(__volume_fraction, __number_of_shapes, __random_position),
         _random_radius(__random_radius),
         _random_height(__random_height),
@@ -464,7 +464,7 @@ public:
         _max_height(__max_height)
     {}
 
-    virtual ~cylinder_input(){}
+    virtual ~cylinder_lf_input(){}
 
     inline auto set_random_radius(bool __val){
         _random_radius = __val;
@@ -529,7 +529,7 @@ public:
         auto& radius = *this->_distributions.at("radius").get();
         auto& height = *this->_distributions.at("height").get();
 
-        auto shape = std::make_unique<cylinder<value_type>>();
+        auto shape = std::make_unique<cylinder_lf<value_type>>();
         shape.get()->radius() = radius();
         shape.get()->height() = height();
         shape.get()->point() = {pos_x(), pos_y(), pos_z()};
@@ -544,6 +544,112 @@ private:
     value_type _min_height;
     value_type _max_height;
 };
+
+class cylinder_sf_input : public rve_shape_input
+{
+public:
+    using value_type = double;
+
+    cylinder_sf_input():
+        _random_radius(),
+        _random_height(),
+        _min_radius(),
+        _max_radius(),
+        _min_height(),
+        _max_height()
+    {}
+
+    cylinder_sf_input(bool const __random_position, bool const __random_radius, bool const __random_height, value_type const __min_radius, value_type const __max_radius, value_type const __min_height, value_type const __max_height,value_type const __volume_fraction, int const __number_of_shapes):
+        rve_shape_input(__volume_fraction, __number_of_shapes, __random_position),
+        _random_radius(__random_radius),
+        _random_height(__random_height),
+        _min_radius(__min_radius),
+        _max_radius(__max_radius),
+        _min_height(__min_height),
+        _max_height(__max_height)
+    {}
+
+    virtual ~cylinder_sf_input(){}
+
+    inline auto set_random_radius(bool __val){
+        _random_radius = __val;
+    }
+
+    inline auto is_random_radius()const{
+        return _random_radius;
+    }
+
+    inline auto get_radius_min()const{
+        return _min_radius;
+    }
+
+    inline auto get_radius_max()const{
+        return _max_radius;
+    }
+
+    inline auto set_radius_min(double const __val){
+        _min_radius = __val;
+    }
+
+    inline auto set_radius_max(double const __val){
+        _max_radius = __val;
+    }
+
+    inline auto set_random_height(bool __val){
+        _random_height = __val;
+    }
+
+    inline auto is_random_height()const{
+        return _random_height;
+    }
+
+    inline auto get_height_min()const{
+        return _min_height;
+    }
+
+    inline auto get_height_max()const{
+        return _max_height;
+    }
+
+    inline auto set_height_min(double const __val){
+        _min_height = __val;
+    }
+
+    inline auto set_height_max(double const __val){
+        _max_height = __val;
+    }
+
+    virtual value_type min_area() const override {
+        return 0.0;
+    }
+
+    virtual value_type min_volume() const override {
+        return _min_radius*_min_radius*M_PI*_min_height;
+    }
+
+    virtual std::unique_ptr<shape_base<value_type>> new_shape() const override {
+        auto& pos_x = *this->_distributions.at("pos_x").get();
+        auto& pos_y = *this->_distributions.at("pos_y").get();
+        auto& pos_z = *this->_distributions.at("pos_z").get();
+        auto& radius = *this->_distributions.at("radius").get();
+        auto& height = *this->_distributions.at("height").get();
+
+        auto shape = std::make_unique<cylinder_sf<value_type>>();
+        shape.get()->radius() = radius();
+        shape.get()->height() = height();
+        shape.get()->point() = {pos_x(), pos_y(), pos_z()};
+        return shape;
+    }
+
+private:
+    bool _random_radius;
+    bool _random_height;
+    value_type _min_radius;
+    value_type _max_radius;
+    value_type _min_height;
+    value_type _max_height;
+};
+
 
 class ellipsoid_input : public rve_shape_input
 {

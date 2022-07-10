@@ -24,12 +24,12 @@ public:
     write_gmsh_geo() {}
 
     template<typename _RVE>
-    inline void write_file(std::fstream & __file, _RVE const& __rve){
+    inline void write_file(std::fstream & __file, _RVE const& __rve, double time){
         const auto dimension{__rve.dimension()};
         if(dimension == 2){
-            write_file_2D(__file, __rve);
+            write_file_2D(__file, __rve, time);
         }else if (dimension == 3) {
-            write_file_3D(__file, __rve);
+            write_file_3D(__file, __rve, time);
         }
     }
 
@@ -70,12 +70,18 @@ private:
     }
 
     template<typename _RVE>
-    inline void write_file_2D(std::fstream & __file, _RVE const& __rve){
+    inline void write_file_2D(std::fstream & __file, _RVE const& __rve, double time){
         const auto [x_box, y_box, z_box]{__rve.box()};
         const auto& shapes{__rve.shapes()};
 
         __file<<"//Number of shapes: "<<__rve.get_number_of_shapes()<<std::endl;
         __file<<"//Volume fraction: "<<__rve.get_vol_frac_inclusion()<<std::endl;
+        __file<<"//Runtime: "<<time<<"ms" <<std::endl;
+
+        std::cout<<"Number of shapes: "<<__rve.get_number_of_shapes()<<std::endl;
+        std::cout<<"Volume fraction: "<<__rve.get_vol_frac_inclusion()<<std::endl;
+        std::cout<<"Runtime: "<<time<<"ms" <<std::endl;
+
 
         __file<<"SetFactory(\"OpenCASCADE\");"<<std::endl;
         __file<<"Rectangle(1) = {0, 0, 0, "<<x_box<<", "<<y_box<<", 0};"<<std::endl;
@@ -151,12 +157,17 @@ private:
     }
 
     template<typename _RVE>
-    inline void write_file_3D(std::fstream & __file, _RVE const& __rve){
+    inline void write_file_3D(std::fstream & __file, _RVE const& __rve, double time){
         const auto [x_box, y_box, z_box]{__rve.box()};
         const auto& shapes{__rve.shapes()};
 
         __file<<"//Number of shapes: "<<__rve.get_number_of_shapes()<<std::endl;
         __file<<"//Volume fraction: "<<__rve.get_vol_frac_inclusion()<<std::endl;
+        __file<<"//Runtime: "<<time<<"ms" <<std::endl;
+
+        std::cout<<"Number of shapes: "<<__rve.get_number_of_shapes()<<std::endl;
+        std::cout<<"Volume fraction: "<<__rve.get_vol_frac_inclusion()<<std::endl;
+        std::cout<<"Runtime: "<<time<<"ms" <<std::endl;
 
         __file<<"SetFactory(\"OpenCASCADE\");"<<std::endl;
         __file<<"Mesh.CharacteristicLengthMin = 0;"<<std::endl;
@@ -167,9 +178,12 @@ private:
         const size_type start = 2;
 
         for(size_t i{0}; i<shapes.size(); ++i){
-            if(dynamic_cast<cylinder<value_typ>*>(shapes[i].get())){
-                const auto& data{*static_cast<cylinder<value_typ>*>(shapes[i].get())};
-                __file<<"Cylinder("<<start+i<<") = {"<<data(0)<<","<<data(1)<<","<<data(2)<<", 0," <<data.height()<<", "<<"0"<<", "<<data.radius()<<", 2*Pi};"<<std::endl;
+            if(dynamic_cast<cylinder_lf<value_typ>*>(shapes[i].get())){
+                const auto& data{*static_cast<cylinder_lf<value_typ>*>(shapes[i].get())};
+                __file<<"Cylinder("<<start+i<<") = {"<<data(0)<<","<<data(1)<<","<<data(2)-0.5*data.height()<<", 0, 0,"<<data.height()<<", "<<data.radius()<<", 2*Pi};"<<std::endl;
+            }else if(dynamic_cast<cylinder_sf<value_typ>*>(shapes[i].get())){
+                const auto& data{*static_cast<cylinder_sf<value_typ>*>(shapes[i].get())};
+                __file<<"Cylinder("<<start+i<<") = {"<<data(0)<<","<<data(1)<<","<<data(2)-0.5*data.height()<<", 0, 0,"<<data.height()<<", "<<data.radius()<<", 2*Pi};"<<std::endl;
 
             }else if(dynamic_cast<ellipsoid<value_typ>*>(shapes[i].get())){
                 const auto& data{*static_cast<ellipsoid<value_typ>*>(shapes[i].get())};
@@ -188,11 +202,11 @@ private:
         }
 
         for(size_t i{0};i<shapes.size();++i){
-//            __file<<"BooleanIntersection{ Volume{1}; }{ Volume{"<<i+2<<"}; Delete; }"<<std::endl;
+            __file<<"BooleanIntersection{ Volume{1}; }{ Volume{"<<i+2<<"}; Delete; }"<<std::endl;
         }
 
         for(size_t i{0};i<shapes.size();++i){
-//            __file<<"BooleanDifference{ Volume{1}; Delete; }{ Volume{"<<i+2<<"}; }"<<std::endl;
+            __file<<"BooleanDifference{ Volume{1}; Delete; }{ Volume{"<<i+2<<"}; }"<<std::endl;
         }
     }
 };

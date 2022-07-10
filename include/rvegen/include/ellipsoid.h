@@ -114,16 +114,22 @@ public:
         return (4/3*_radius_a*_radius_b*_radius_c*M_PI);
     }
 
-    value_type max_expansion()const{
-        if ((_radius_a > _radius_b)&&(_radius_a > _radius_b)){
-            return _radius_a;
-        }
-        else if ((_radius_b > _radius_a)&&(_radius_b > _radius_c)){
-            return _radius_b;
-        }
-        else {
-            return _radius_c;
-        }
+    virtual std::array<T,3> max_expansion()const{
+        using Matrix33  = Eigen::Matrix<value_type,3,3>;
+        using Vector3   = Eigen::Vector3<value_type>;
+        using AngleAxis = Eigen::AngleAxis<value_type>;
+
+        //https://math.stackexchange.com/questions/3926884/smallest-axis-aligned-bounding-box-of-hyper-ellipsoid
+        Eigen::DiagonalMatrix<value_type,3> D{1./(_radius_a*_radius_a), 1./(_radius_b*_radius_b), 1./(_radius_c*_radius_c)};
+
+        Matrix33 rot;
+        rot = AngleAxis(_rotation_z, Vector3::UnitZ())
+                * AngleAxis(_rotation_y, Vector3::UnitY())
+                * AngleAxis(_rotation_x, Vector3::UnitX());
+
+        Matrix33 A = (rot*D*rot.transpose()).inverse();
+
+        return {std::sqrt(A(0,0)), std::sqrt(A(1,1)), std::sqrt(A(2,2))};
     }
 
     std::array<T,3> get_middle_point()const override{

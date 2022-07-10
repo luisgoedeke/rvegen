@@ -73,7 +73,10 @@ template<typename T>
 auto collision_details(sphere<T> const& lhs, sphere<T> const& rhs);
 
 template<typename T>
-auto collision_details(cylinder<T> const& lhs, cylinder<T> const& rhs);
+auto collision_details(cylinder_lf<T> const& lhs, cylinder_lf<T> const& rhs);
+
+template<typename T>
+auto collision_details(cylinder_sf<T> const& lhs, cylinder_sf<T> const& rhs);
 
 template<typename T>
 auto collision_details(rectangle<T> const& lhs, rectangle<T> const& rhs);
@@ -536,62 +539,104 @@ auto collision_details(circle<T> const& lhs, circle<T> const& rhs){
 }
 
 template<typename T>
-auto collision_details(cylinder<T> const& lhs, cylinder<T> const& rhs){
+auto collision_details(cylinder_lf<T> const& lhs, cylinder_lf<T> const& rhs){
     const auto a{lhs.radius() + rhs.radius()};
     const auto dx = lhs(0) - rhs(0);
-    const auto dz = lhs(2) - rhs(2);
-    const auto start_lhs = lhs(1);
-    const auto end_lhs = lhs(1)+lhs.height();
-    const auto start_rhs = rhs(1);
-    const auto end_rhs = rhs(1)+rhs.height();
-    if (a * a >= (dx * dx + dz * dz)){
+    const auto dy = lhs(1) - rhs(1);
+    const auto start_lhs = lhs(2)-0.5*lhs.height();
+    const auto end_lhs = lhs(2)+0.5*lhs.height();
+    const auto start_rhs = rhs(2)-0.5*rhs.height();
+    const auto end_rhs = rhs(2)+0.5*rhs.height();
+    if (a * a >= (dx * dx + dy * dy)){
         return !((end_lhs < start_rhs)||start_lhs > end_rhs);
     }
     return false;
 }
 
 template<typename T>
-bool bounding_overlap_check(box_bounding<T> const& lhs, box_bounding<T> const& rhs){
-    const auto& lhs_top{lhs.top_point()};
-    const auto& rhs_top{rhs.top_point()};
-    const auto& lhs_bottom{lhs.bottom_point()};
-    const auto& rhs_bottom{rhs.bottom_point()};
-
-    return ((lhs_bottom[0] <= rhs_top[0] && lhs_top[0] >= rhs_bottom[0]) &&
-            (lhs_bottom[1] <= rhs_top[1] && lhs_top[1] >= rhs_bottom[1]));
+auto collision_details(cylinder_sf<T> const& lhs, cylinder_sf<T> const& rhs){
+    const auto a{lhs.radius() + rhs.radius()};
+    const auto dx = lhs(0) - rhs(0);
+    const auto dy = lhs(1) - rhs(1);
+    const auto start_lhs = lhs(2)-0.5*lhs.height();
+    const auto end_lhs = lhs(2)+0.5*lhs.height();
+    const auto start_rhs = rhs(2)-0.5*rhs.height();
+    const auto end_rhs = rhs(2)+0.5*rhs.height();
+    if (a * a >= (dx * dx + dy * dy)){
+        return !((end_lhs < start_rhs)||start_lhs > end_rhs);
+    }
+    return false;
 }
 
 template<typename T>
-bool bounding_overlap_check(rectangle_bounding<T> const& lhs, rectangle_bounding<T> const& rhs){
+bool bounding_overlap_check(int axis, box_bounding<T> const& lhs, box_bounding<T> const& rhs){
     const auto& lhs_top{lhs.top_point()};
     const auto& rhs_top{rhs.top_point()};
     const auto& lhs_bottom{lhs.bottom_point()};
     const auto& rhs_bottom{rhs.bottom_point()};
 
-    return (((lhs_bottom[0] >= rhs_bottom[0]) && (lhs_bottom[0] <= rhs_top[0]))||
-           ((rhs_bottom[0] >= lhs_bottom[0]) && (rhs_bottom[0] <= lhs_top[0]))||
-           ((lhs_top[0] >= rhs_bottom[0]) && (lhs_top[0] <= rhs_top[0]))||
-           ((rhs_top[0] >= lhs_bottom[0]) && (rhs_top[0] <= lhs_top[0]))||
-           ((lhs_bottom[0] <= rhs_bottom[0]) && (lhs_top[0] >= rhs_top[0]))||
-           ((rhs_bottom[0] <= lhs_bottom[0]) && (rhs_top[0] >= lhs_top[0])));
+    if (axis == 0){
+        return ((lhs_bottom[1] <= rhs_top[1] && lhs_top[1] >= rhs_bottom[1]) &&
+                (lhs_bottom[2] <= rhs_top[2] && lhs_top[2] >= rhs_bottom[2]));
+    }
+
+    if (axis == 1){
+        return ((lhs_bottom[0] <= rhs_top[0] && lhs_top[0] >= rhs_bottom[0]) &&
+                (lhs_bottom[2] <= rhs_top[2] && lhs_top[2] >= rhs_bottom[2]));
+    }
+
+    if (axis == 2){
+        return ((lhs_bottom[0] <= rhs_top[0] && lhs_top[0] >= rhs_bottom[0]) &&
+                (lhs_bottom[1] <= rhs_top[1] && lhs_top[1] >= rhs_bottom[1]));
+    }
+    else return false;
+
+}
+
+template<typename T>
+bool bounding_overlap_check(int axis, rectangle_bounding<T> const& lhs, rectangle_bounding<T> const& rhs){
+    const auto& lhs_top{lhs.top_point()};
+    const auto& rhs_top{rhs.top_point()};
+    const auto& lhs_bottom{lhs.bottom_point()};
+    const auto& rhs_bottom{rhs.bottom_point()};
+
+    if (axis == 0){
+        return (((lhs_bottom[1] >= rhs_bottom[1]) && (lhs_bottom[1] <= rhs_top[1]))||
+               ((rhs_bottom[1] >= lhs_bottom[1]) && (rhs_bottom[1] <= lhs_top[1]))||
+               ((lhs_top[1] >= rhs_bottom[1]) && (lhs_top[1] <= rhs_top[1]))||
+               ((rhs_top[1] >= lhs_bottom[1]) && (rhs_top[1] <= lhs_top[1]))||
+               ((lhs_bottom[1] <= rhs_bottom[1]) && (lhs_top[1] >= rhs_top[1]))||
+               ((rhs_bottom[1] <= lhs_bottom[1]) && (rhs_top[1] >= lhs_top[1])));
+    }else if (axis == 1){
+        return (((lhs_bottom[0] >= rhs_bottom[0]) && (lhs_bottom[0] <= rhs_top[0]))||
+               ((rhs_bottom[0] >= lhs_bottom[0]) && (rhs_bottom[0] <= lhs_top[0]))||
+               ((lhs_top[0] >= rhs_bottom[0]) && (lhs_top[0] <= rhs_top[0]))||
+               ((rhs_top[0] >= lhs_bottom[0]) && (rhs_top[0] <= lhs_top[0]))||
+               ((lhs_bottom[0] <= rhs_bottom[0]) && (lhs_top[0] >= rhs_top[0]))||
+               ((rhs_bottom[0] <= lhs_bottom[0]) && (rhs_top[0] >= lhs_top[0])));
+    }else{
+        return false;
+    }
+
+
 }
 
 template<typename T>
 auto collision(ellipse<T> const& lhs, ellipse<T> const& rhs){
-    if (collision_details(*static_cast<rectangle_bounding<T>*>(lhs.bounding_box()), *static_cast<rectangle_bounding<T>*>(rhs.bounding_box()))){
+//    if (collision_details(*static_cast<rectangle_bounding<T>*>(lhs.bounding_box()), *static_cast<rectangle_bounding<T>*>(rhs.bounding_box()))){
         return collision_details(lhs, rhs);
-    }else{
-        return false;
-    };
+//    }else{
+//        return false;
+//    };
 }
 
 template<typename T>
 auto collision(ellipsoid<T> const& lhs, ellipsoid<T> const& rhs){
-    if(collision_details(*static_cast<box_bounding<T>*>(lhs.bounding_box()), *static_cast<box_bounding<T>*>(rhs.bounding_box()))){
+//    if(collision_details(*static_cast<box_bounding<T>*>((lhs.bounding_box()).get()), *static_cast<box_bounding<T>*>((rhs.bounding_box()).get()))){
         return collision_details(lhs, rhs);
-    }else{
-        return false;
-    };
+//    }else{
+//        return false;
+//    };
 }
 
 template<template<class> class _PTR, typename _T>
@@ -680,11 +725,23 @@ bool collision(std::vector<_PTR<shape_base<_T>>> const& __shapes, shape_base<_T>
                 throw std::runtime_error("collision(): no matching shape type");
             }
         }
-    }else if(dynamic_cast<cylinder<_T>*>(__shape)){
+    }else if(dynamic_cast<cylinder_lf<_T>*>(__shape)){
         for(const auto& shape : __shapes){
-            if(dynamic_cast<cylinder<_T>*>(shape.get())){
+            if(dynamic_cast<cylinder_lf<_T>*>(shape.get())){
                 //check distance
-                if(collision_details(*static_cast<cylinder<_T>*>(__shape), *static_cast<cylinder<_T>*>(shape.get()))){
+                if(collision_details(*static_cast<cylinder_lf<_T>*>(__shape), *static_cast<cylinder_lf<_T>*>(shape.get()))){
+                    //collision
+                    return true;
+                }
+            }else{
+                throw std::runtime_error("collision(): no matching shape type");
+            }
+        }
+    }else if(dynamic_cast<cylinder_sf<_T>*>(__shape)){
+        for(const auto& shape : __shapes){
+            if(dynamic_cast<cylinder_sf<_T>*>(shape.get())){
+                //check distance
+                if(collision_details(*static_cast<cylinder_sf<_T>*>(__shape), *static_cast<cylinder_sf<_T>*>(shape.get()))){
                     //collision
                     return true;
                 }

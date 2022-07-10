@@ -56,12 +56,8 @@ public:
         return 0.0;
     }
 
-    value_type max_expansion()const{
-        return _radius;
-    }
-
-    value_type& max_expansion(){
-        return _radius;
+    virtual std::array<T,3> max_expansion()const{
+        return {_radius, _radius, 0};
     }
 
     std::unique_ptr<rectangle_bounding<value_type>> bounding_box(){
