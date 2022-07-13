@@ -623,20 +623,20 @@ bool bounding_overlap_check(int axis, rectangle_bounding<T> const& lhs, rectangl
 
 template<typename T>
 auto collision(ellipse<T> const& lhs, ellipse<T> const& rhs){
-//    if (collision_details(*static_cast<rectangle_bounding<T>*>(lhs.bounding_box()), *static_cast<rectangle_bounding<T>*>(rhs.bounding_box()))){
+    if (collision_details(*static_cast<rectangle_bounding<T>*>(lhs.bounding_box()), *static_cast<rectangle_bounding<T>*>(rhs.bounding_box()))){
         return collision_details(lhs, rhs);
-//    }else{
-//        return false;
-//    };
+    }else{
+        return false;
+    };
 }
 
 template<typename T>
 auto collision(ellipsoid<T> const& lhs, ellipsoid<T> const& rhs){
-//    if(collision_details(*static_cast<box_bounding<T>*>((lhs.bounding_box()).get()), *static_cast<box_bounding<T>*>((rhs.bounding_box()).get()))){
+    if(collision_details(*static_cast<box_bounding<T>*>((lhs.bounding_box()).get()), *static_cast<box_bounding<T>*>((rhs.bounding_box()).get()))){
         return collision_details(lhs, rhs);
-//    }else{
-//        return false;
-//    };
+    }else{
+        return false;
+    };
 }
 
 template<template<class> class _PTR, typename _T>
