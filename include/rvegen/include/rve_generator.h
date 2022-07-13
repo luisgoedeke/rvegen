@@ -46,7 +46,7 @@ public:
     using size_type = std::size_t;
 
 
-    rve_generator(rveType const __rve_type = rveType::Random, std::size_t const __dimension = 2, value_type const _x = 1, value_type const _y = 1, value_type const _z = 1):
+    rve_generator(rveType const __rve_type = rveType::Random, std::size_t const __dimension = 3, value_type const _x = 1, value_type const _y = 1, value_type const _z = 1):
         _rve_type(__rve_type),
         _dim(__dimension),
         _max_iter(50000),
@@ -709,11 +709,11 @@ constexpr inline auto rve_generator<_Distribution>::compute_inclusion_stuff_only
 
     set_sections(AnzahlBereiche, number_of_shapes, sections);
 
-    int AnzahlDurchläufeGesamt = 50;
+    int AnzahlDurchläufeGesamt = 10;
     int FehlversucheFrei = 0;
     int FehlversucheSeitenMax = 10;
-    int FehlversucheFreiMax = 10000;
-    int DurchläufeGravitationMax = 20;
+    int FehlversucheFreiMax = 1000;
+    int DurchläufeGravitationMax = 10;
 
     if (right_size){
         //Durchgänge gesamt
