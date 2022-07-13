@@ -84,6 +84,18 @@ public:
         return _point;
     }
 
+    virtual std::array<T,3> max_expansion()const{
+        using Matrix22  = Eigen::Matrix<value_type,2,2>;
+
+        Eigen::DiagonalMatrix<value_type,2> D{1./(_radius_a*_radius_a), 1./(_radius_b*_radius_b)};
+
+        Eigen::Rotation2D<value_type> rot(2*_rotation*M_PI);
+
+        Matrix22 A = (rot.toRotationMatrix()*D*rot.toRotationMatrix().transpose()).inverse();
+
+        return {std::sqrt(A(0,0)), std::sqrt(A(1,1)), 0};
+    }
+
     std::array<T,3> get_middle_point()const override{
         return {_point[0], _point[1], 0};
     }
@@ -118,6 +130,10 @@ public:
         this->_bounding_box = std::move(box_ptr);
     }
 
+    std::unique_ptr<rectangle_bounding<value_type>> bounding_box()const{
+        return this->bounding_box();
+    }
+
     virtual value_type area()const override{
         return _radius_a*_radius_b*M_PI;
     }
@@ -125,25 +141,6 @@ public:
     virtual value_type volume()const override{
         return 0;
     }
-
-    value_type max_expansion()const{
-        if (_radius_a > _radius_b){
-            return _radius_a;
-        }
-        else{
-            return _radius_b;
-        }
-    }
-
-    value_type& max_expansion(){
-        if (_radius_a > _radius_b){
-            return _radius_a;
-        }
-        else{
-            return _radius_b;
-        }
-    }
-
 
     void move(value_type x, value_type y)const{
         _point[0] = x;

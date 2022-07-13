@@ -28,7 +28,7 @@ public:
 
     virtual void make_bounding_box() = 0;
 
-    virtual value_type max_expansion()const = 0;
+    virtual std::array<T,3> max_expansion()const = 0;
 
 
     bounding_box_base<T>* bounding_box()const{

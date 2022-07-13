@@ -46,7 +46,7 @@ public:
     using size_type = std::size_t;
 
 
-    rve_generator(rveType const __rve_type = rveType::OnlyInsideSamepackHeuristic, std::size_t const __dimension = 3, value_type const _x = 1, value_type const _y = 1, value_type const _z = 1):
+    rve_generator(rveType const __rve_type = rveType::Random, std::size_t const __dimension = 3, value_type const _x = 1, value_type const _y = 1, value_type const _z = 1):
         _rve_type(__rve_type),
         _dim(__dimension),
         _max_iter(50000),
@@ -82,11 +82,16 @@ public:
                     throw std::runtime_error("no matching dimensions");
                 }
                 compute_single_ellipse(*static_cast<ellipse_input*>(__input[0].get()), __random_generator);
-            }else if (dynamic_cast<cylinder_input*>(__input[0].get())){
+            }else if (dynamic_cast<cylinder_lf_input*>(__input[0].get())){
                 if (_dim !=3){
                     throw std::runtime_error("no matching dimensions");
                 }
-                compute_single_cylinder(*static_cast<cylinder_input*>(__input[0].get()), __random_generator);
+                compute_single_cylinder_lf(*static_cast<cylinder_lf_input*>(__input[0].get()), __random_generator);
+            }else if (dynamic_cast<cylinder_sf_input*>(__input[0].get())){
+                if (_dim !=3){
+                    throw std::runtime_error("no matching dimensions");
+                }
+                compute_single_cylinder_sf(*static_cast<cylinder_sf_input*>(__input[0].get()), __random_generator);
             }else if (dynamic_cast<ellipsoid_input*>(__input[0].get())){
                 if (_dim !=3){
                     throw std::runtime_error("no matching dimensions");
@@ -223,16 +228,28 @@ private:
     constexpr inline auto compute_single_ellipse_random(ellipse_input const& __input, _Generator& __random_generator);
 
     template<typename _Generator>
-    constexpr inline auto compute_single_cylinder(cylinder_input const& __input, _Generator& __random_generator);
+    constexpr inline auto compute_single_cylinder_lf(cylinder_lf_input const& __input, _Generator& __random_generator);
 
     template<typename _Generator>
-    constexpr inline auto compute_single_cylinder_only_inside(cylinder_input const& __input, _Generator& __random_generator);
+    constexpr inline auto compute_single_cylinder_sf(cylinder_sf_input const& __input, _Generator& __random_generator);
 
     template<typename _Generator>
-    constexpr inline auto compute_single_cylinder_periodic(cylinder_input const& __input, _Generator& __random_generator);
+    constexpr inline auto compute_single_cylinder_lf_only_inside(cylinder_lf_input const& __input, _Generator& __random_generator);
 
     template<typename _Generator>
-    constexpr inline auto compute_single_cylinder_random(cylinder_input const& __input, _Generator& __random_generator);
+    constexpr inline auto compute_single_cylinder_sf_only_inside(cylinder_sf_input const& __input, _Generator& __random_generator);
+
+    template<typename _Generator>
+    constexpr inline auto compute_single_cylinder_lf_periodic(cylinder_lf_input const& __input, _Generator& __random_generator);
+
+    template<typename _Generator>
+    constexpr inline auto compute_single_cylinder_sf_periodic(cylinder_sf_input const& __input, _Generator& __random_generator);
+
+    template<typename _Generator>
+    constexpr inline auto compute_single_cylinder_lf_random(cylinder_lf_input const& __input, _Generator& __random_generator);
+
+    template<typename _Generator>
+    constexpr inline auto compute_single_cylinder_sf_random(cylinder_sf_input const& __input, _Generator& __random_generator);
 
     template<typename _Generator>
     constexpr inline auto compute_single_ellipsoid(ellipsoid_input const& __input, _Generator& __random_generator);
@@ -375,7 +392,7 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_ellipse(ellip
 
 template <typename _Distribution>
 template<typename _Generator>
-constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder(cylinder_input const& __input, _Generator& __random_generator){
+constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_lf(cylinder_lf_input const& __input, _Generator& __random_generator){
 
 #ifdef RVE_DEBUG
     //print only in debug mode
@@ -389,11 +406,35 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder(cyli
 #endif
 
     if(_rve_type == rveType::OnlyInside){
-        compute_single_cylinder_only_inside(__input, __random_generator);
+        compute_single_cylinder_lf_only_inside(__input, __random_generator);
     }else if(_rve_type == rveType::Periodic){
-        compute_single_cylinder_periodic(__input, __random_generator);
+        compute_single_cylinder_lf_periodic(__input, __random_generator);
     }else if(_rve_type == rveType::Random){
-        compute_single_cylinder_random(__input, __random_generator);
+        compute_single_cylinder_lf_random(__input, __random_generator);
+    }
+}
+
+template <typename _Distribution>
+template<typename _Generator>
+constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_sf(cylinder_sf_input const& __input, _Generator& __random_generator){
+
+#ifdef RVE_DEBUG
+    //print only in debug mode
+    //do some stuff
+    std::cout<<"Do some random cylinder stuff"<<std::endl;
+    std::cout<<"radius min      "<<__input.get_radius_min()<<std::endl;
+    std::cout<<"radius max      "<<__input.get_radius_max()<<std::endl;
+    std::cout<<"height min      "<<__input.get_height_min()<<std::endl;
+    std::cout<<"height max      "<<__input.get_height_max()<<std::endl;
+    std::cout<<"volume fraction "<<__input.get_volume_fraction()<<std::endl;
+#endif
+
+    if(_rve_type == rveType::OnlyInside){
+        compute_single_cylinder_sf_only_inside(__input, __random_generator);
+    }else if(_rve_type == rveType::Periodic){
+        compute_single_cylinder_sf_periodic(__input, __random_generator);
+    }else if(_rve_type == rveType::Random){
+        compute_single_cylinder_sf_random(__input, __random_generator);
     }
 }
 
@@ -470,7 +511,7 @@ constexpr inline auto rve_generator<_Distribution>::compute_multiple_inclusion_s
             std::fstream test_bsp;
             test_bsp.open("test_bsp_" + std::to_string(iter) + ".geo",std::ios::out);
             write_gmsh_geo<double> gmsh;
-            gmsh.write_file(test_bsp, *this);
+            gmsh.write_file(test_bsp, *this, 0.0);
             //gmsh.write_bounding_boxes(test_bsp, *this);
 #endif
 
@@ -585,7 +626,11 @@ constexpr inline auto rve_generator<_Distribution>::compute_inclusion_stuff_rand
         new_shape.get()->make_bounding_box();
 
         if(!collision(_shapes, new_shape.get())){
-            _vol_frac_inclusion += new_shape->area();
+            if (dimension() == 2){
+               _vol_frac_inclusion += new_shape->area();
+            }else{
+               _vol_frac_inclusion += new_shape->volume();
+            }
             _shapes.emplace_back(std::move(new_shape));
         }
 
@@ -594,7 +639,7 @@ constexpr inline auto rve_generator<_Distribution>::compute_inclusion_stuff_rand
         std::fstream test_bsp;
         test_bsp.open("test_bsp_" + std::to_string(iter) + ".geo",std::ios::out);
         write_gmsh_geo<double> gmsh;
-        gmsh.write_file(test_bsp, *this);
+        gmsh.write_file(test_bsp, *this, 0.0);
         gmsh.write_bounding_boxes(test_bsp, *this);
 #endif
 
@@ -631,13 +676,13 @@ constexpr inline auto rve_generator<_Distribution>::compute_inclusion_stuff_only
 
     }
 
-    size_type iter{0};
+    value_type max_frac = __input_shape->get_volume_fraction();
 
     const value_type volume_fraction{__input_shape->get_volume_fraction()};
     const value_type volume{__input_shape->min_volume()};
     const value_type area{__input_shape->min_area()};
 
-    _vol_frac_inclusion = 0;
+    _vol_frac_inclusion = 0.0;
     int number_of_shapes = __input_shape->get_number_of_shapes();
 
     _shapes.clear();
@@ -666,40 +711,38 @@ constexpr inline auto rve_generator<_Distribution>::compute_inclusion_stuff_only
 
     int AnzahlDurchläufeGesamt = 10;
     int FehlversucheFrei = 0;
-    int FehlversucheSeitenMax = 100;
+    int FehlversucheSeitenMax = 10;
     int FehlversucheFreiMax = 1000;
     int DurchläufeGravitationMax = 10;
 
-    //Durchgänge gesamt
-    for (int i=0;i<AnzahlDurchläufeGesamt;i++){
-       //Bereiche
-        for (int j=0;j<AnzahlBereiche;j++){
-           fill_sides(dimension(), j, FehlversucheSeitenMax, sections, _shapes, _generated_shapes);
-           while (FehlversucheFrei <= FehlversucheFreiMax){
-                 if (!arrange_next(dimension(), j, sections, _shapes, _generated_shapes)){
-                    FehlversucheFrei++;
+    if (right_size){
+        //Durchgänge gesamt
+        for (int i=0;i<AnzahlDurchläufeGesamt;i++){
+           //Bereiche
+            for (int j=0;j<AnzahlBereiche;j++){
+               fill_sides(_vol_frac_inclusion, max_frac, dimension(), j, FehlversucheSeitenMax, sections, _shapes, _generated_shapes);
+               while ((FehlversucheFrei <= FehlversucheFreiMax) && (_vol_frac_inclusion < max_frac)){
+                     if (!arrange_next(_vol_frac_inclusion, dimension(), j, sections, _shapes, _generated_shapes)){
+                        FehlversucheFrei++;
+                    }
+                     else{
+                         FehlversucheFrei = 0;
+                     }
                 }
-                 else{
-                     FehlversucheFrei = 0;
-                 }
+               FehlversucheFrei = 0;
             }
-           FehlversucheFrei = 0;
+            if(_vol_frac_inclusion < max_frac){
+                for (int i=0; i<DurchläufeGravitationMax; i++){
+                  add_gravity(dimension(),_shapes);
+                }
+            }
+
         }
-        for (int i=0; i<DurchläufeGravitationMax; i++){
-          add_gravity(dimension(),_shapes);
-        }
+
+    }else{
+        std::cout<< "Bitte durch "<<AnzahlBereiche<<" teilbare Zahl angeben" <<std::endl;
     }
 
-    _vol_frac_inclusion = 0.0;
-
-    for (int i=0; i<_shapes.size();i++){
-        if (dimension() == 2){
-         _vol_frac_inclusion += (_shapes[i].get()->area())/_box[0]*_box[1];
-        }
-        if (dimension() == 3){
-         _vol_frac_inclusion += (_shapes[i].get()->volume())/_box[0]*_box[1]*_box[2];
-        }
-    }
 
 /*
 #ifdef RVE_DEBUG
@@ -858,7 +901,7 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_ellipse_rando
             std::fstream test_bsp;
             test_bsp.open("test_bsp_" + std::to_string(iter) + ".geo",std::ios::out);
             write_gmsh_geo<double> gmsh;
-            gmsh.write_file(test_bsp, *this);
+            gmsh.write_file(test_bsp, *this, 0.0);
             gmsh.write_bounding_boxes(test_bsp, *this);
 #endif
         }
@@ -884,7 +927,7 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_ellipse_rando
 
 template <typename _Distribution>
 template<typename _Generator>
-constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_random(cylinder_input const& __input, _Generator& __random_generator){
+constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_lf_random(cylinder_lf_input const& __input, _Generator& __random_generator){
     const value_type minR{__input.get_radius_min()}, maxR{__input.get_radius_max()}, minH{__input.get_height_min()}, maxH{__input.get_height_max()};
     const value_type volume_faction{__input.get_volume_fraction()};
     _Distribution dis_radius(minR, maxR);
@@ -916,10 +959,69 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_rand
         const auto x{dis_x(__random_generator)};
         const auto y{dis_y(__random_generator)};
         const auto z{dis_z(__random_generator)};
-        cylinder<value_type> cylinder_(x, y, z, radius, height);
+        cylinder_lf<value_type> cylinder_(x, y, z, radius, height);
 
         if(!collision(_shapes, &cylinder_)){
-            _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_));
+            _shapes.emplace_back(std::make_unique<cylinder_lf<value_type>>(cylinder_));
+            _vol_frac_inclusion += cylinder_.volume();
+        }
+
+#ifdef RVE_DEBUG
+        std::cout<<"iter "<<iter<<" volume fraction "<<_vol_frac_inclusion<<" error "<<(volume_faction - (_vol_frac_inclusion/(_box[0]*_box[1])))<<std::endl;
+#endif
+
+        if((volume_faction - (_vol_frac_inclusion/(_box[0]*_box[1]))) < 0.005){
+            finished = true;
+            break;
+        }
+
+        ++iter;
+    }
+
+
+    if(iter == _max_iter){
+        throw std::runtime_error("max iterations reached");
+    }
+}
+
+template <typename _Distribution>
+template<typename _Generator>
+constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_sf_random(cylinder_sf_input const& __input, _Generator& __random_generator){
+    const value_type minR{__input.get_radius_min()}, maxR{__input.get_radius_max()}, minH{__input.get_height_min()}, maxH{__input.get_height_max()};
+    const value_type volume_faction{__input.get_volume_fraction()};
+    _Distribution dis_radius(minR, maxR);
+    _Distribution dis_height(minH, maxH);
+    _Distribution dis_x(0, _box[0]);
+    _Distribution dis_y(0, _box[1]);
+    _Distribution dis_z(-_box[2],_box[2]);
+
+    const value_type dx{_box[0]}, dy{_box[1]}, dz{_box[2]};
+
+    const value_type area{minR*minR*M_PI};
+    const value_type volume {minR*minR*M_PI*minH};
+    const size_type max_cylinders{static_cast<size_type>((dx*dy*dz*volume_faction)/volume)};
+
+    size_type iter{0};
+
+    bool finished{false};
+
+
+    _shapes.clear();
+    //reserve data for faster push back of new elements
+    _shapes.reserve(max_cylinders);
+    iter = 0;
+    _vol_frac_inclusion = 0;
+    while (iter <= _max_iter) {
+        //new cylinder
+        const double radius{dis_radius(__random_generator)};
+        const double height{dis_height(__random_generator)};
+        const auto x{dis_x(__random_generator)};
+        const auto y{dis_y(__random_generator)};
+        const auto z{dis_z(__random_generator)};
+        cylinder_sf<value_type> cylinder_(x, y, z, radius, height);
+
+        if(!collision(_shapes, &cylinder_)){
+            _shapes.emplace_back(std::make_unique<cylinder_sf<value_type>>(cylinder_));
             _vol_frac_inclusion += cylinder_.volume();
         }
 
@@ -991,7 +1093,7 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_ellipsoid_ran
             std::fstream test_bsp;
             test_bsp.open("test_bsp_" + std::to_string(iter) + ".geo",std::ios::out);
             write_gmsh_geo<double> gmsh;
-            gmsh.write_file(test_bsp, *this);
+            gmsh.write_file(test_bsp, *this, 0.0);
             gmsh.write_bounding_boxes(test_bsp, *this);
 #endif
         }
@@ -1200,7 +1302,7 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_ellipse_perio
 
 template <typename _Distribution>
 template<typename _Generator>
-constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_periodic(cylinder_input const& __input, _Generator& __random_generator){
+constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_lf_periodic(cylinder_lf_input const& __input, _Generator& __random_generator){
     const value_type minR{__input.get_radius_min()}, maxR{__input.get_radius_max()}, minH{__input.get_height_min()}, maxH{__input.get_height_max()};
     const value_type volume_faction{__input.get_volume_fraction()};
     _Distribution dis_radius(minR, maxR);
@@ -1229,7 +1331,7 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_peri
         const auto x{dis_x(__random_generator)};
         const auto y{dis_y(__random_generator)};
         const auto z{dis_z(__random_generator)};
-        cylinder<value_type> cylinder_(x, y, z, radius, height);
+        cylinder_lf<value_type> cylinder_(x, y, z, radius, height);
 
         bool check_distance_{collision(_shapes, &cylinder_)};
         if(check_distance_ == false){
@@ -1244,81 +1346,81 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_peri
             if((cylinder_(0)-cylinder_.radius()) < 0){
                 is_outside = true;
                 is_outside_left = true;
-                cylinder<value_type> cylinder_periodic(x+dx,y,z,radius,height);
+                cylinder_lf<value_type> cylinder_periodic(x+dx,y,z,radius,height);
                 check_distance_periodic = collision(_shapes, &cylinder_periodic);
                 if(check_distance_periodic == false){
-                    _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_periodic));
+                    _shapes.emplace_back(std::make_unique<cylinder_lf<value_type>>(cylinder_periodic));
                 }
             }
             //right side
             if(cylinder_(0)+cylinder_.radius()>dx){
                 is_outside = true;
                 is_outside_right = true;
-                cylinder<value_type> cylinder_periodic(x-dx,y,z,radius,height);
+                cylinder_lf<value_type> cylinder_periodic(x-dx,y,z,radius,height);
                 check_distance_periodic = collision(_shapes, &cylinder_periodic);
                 if(check_distance_periodic == false){
-                    _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_periodic));
+                    _shapes.emplace_back(std::make_unique<cylinder_lf<value_type>>(cylinder_periodic));
                 }
             }
             //bottom
             if(cylinder_(1)-cylinder_.radius()<0){
                 is_outside = true;
                 is_outside_bottom = true;
-                cylinder<value_type> cylinder_periodic(x,y+dy,z,radius,height);
+                cylinder_lf<value_type> cylinder_periodic(x,y+dy,z,radius,height);
                 check_distance_periodic = collision(_shapes, &cylinder_periodic);
                 if(check_distance_periodic == false){
-                    _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_periodic));
+                    _shapes.emplace_back(std::make_unique<cylinder_lf<value_type>>(cylinder_periodic));
                 }
             }
             //top
             if(cylinder_(1)+cylinder_.radius()>dy){
                 is_outside = true;
                 bool is_outside_top = true;
-                cylinder<value_type> cylinder_periodic(x,y-dy,z,radius,height);
+                cylinder_lf<value_type> cylinder_periodic(x,y-dy,z,radius,height);
                 check_distance_periodic = collision(_shapes, &cylinder_periodic);
                 if(check_distance_periodic == false){
-                    _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_periodic));
+                    _shapes.emplace_back(std::make_unique<cylinder_lf<value_type>>(cylinder_periodic));
                 }
             }
 
             //front
             if(cylinder_(2)+cylinder_.height()>dz){
                 is_outside = true;
-                cylinder<value_type> cylinder_periodic(x,y,0,radius,(height-(dz-z)));
+                cylinder_lf<value_type> cylinder_periodic(x,y,0,radius,(height-(dz-z)));
                 check_distance_periodic = collision(_shapes, &cylinder_periodic);
                 if(check_distance_periodic == false){
-                    _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_periodic));
+                    _shapes.emplace_back(std::make_unique<cylinder_lf<value_type>>(cylinder_periodic));
                 }
                 //front+left
                 if(is_outside_left == true){
-                    cylinder<value_type> cylinder_periodic(x+dx,y,0,radius,(height-(dz-z)));
+                    cylinder_lf<value_type> cylinder_periodic(x+dx,y,0,radius,(height-(dz-z)));
                     check_distance_periodic = collision(_shapes, &cylinder_periodic);
                     if(check_distance_periodic == false){
-                        _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_periodic));
+                        _shapes.emplace_back(std::make_unique<cylinder_lf<value_type>>(cylinder_periodic));
                     }
                 }
                 //front+right
                 if(is_outside_right == true){
-                    cylinder<value_type> cylinder_periodic(x-dx,y,0,radius,(height-(dz-z)));
+                    cylinder_lf<value_type> cylinder_periodic(x-dx,y,0,radius,(height-(dz-z)));
                     check_distance_periodic = collision(_shapes, &cylinder_periodic);
                     if(check_distance_periodic == false){
-                        _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_periodic));
+                        _shapes.emplace_back(std::make_unique<cylinder_lf<value_type>>(cylinder_periodic));
                     }
                 }
                 //front+bottom
                 if(is_outside_bottom == true){
-                    cylinder<value_type> cylinder_periodic(x,y+dy,0,radius,(height-(dz-z)));
+                    cylinder_lf<value_type> cylinder_periodic(x,y+dy,0,radius,(height-(dz-z)));
                     check_distance_periodic = collision(_shapes, &cylinder_periodic);
                     if(check_distance_periodic == false){
-                        _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_periodic));
+                        _shapes.emplace_back(std::make_unique<cylinder_lf<value_type>>(cylinder_periodic));
                     }
                 }
                 //front+top
                 if(is_outside_top == true){
-                    cylinder<value_type> cylinder_periodic(x,y-dy,0,radius,(height-(dz-z)));
+                    cylinder_lf<value_type> cylinder_periodic(x,y-dy,0,radius,(height-(dz-z)));
                     check_distance_periodic = collision(_shapes, &cylinder_periodic);
                     if(check_distance_periodic == false){
-                        _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_periodic));
+                        _shapes.emplace_back(std::make_unique<cylinder_lf<value_type>>(cylinder_periodic));
                     }
                 }
             }
@@ -1326,47 +1428,235 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_peri
             //back
             if(cylinder_(2)+cylinder_.height()<0){
                 is_outside = true;
-                cylinder<value_type> cylinder_periodic(x,y,_box[2],radius,(height+z));
+                cylinder_lf<value_type> cylinder_periodic(x,y,_box[2],radius,(height+z));
                 check_distance_periodic = collision(_shapes, &cylinder_periodic);
                 if(check_distance_periodic == false){
-                    _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_periodic));
+                    _shapes.emplace_back(std::make_unique<cylinder_lf<value_type>>(cylinder_periodic));
                 }
                 //back+left
                 if(is_outside_left == true){
-                    cylinder<value_type> cylinder_periodic(x+dx,y,0,radius,(height+z));
+                    cylinder_lf<value_type> cylinder_periodic(x+dx,y,0,radius,(height+z));
                     check_distance_periodic = collision(_shapes, &cylinder_periodic);
                     if(check_distance_periodic == false){
-                        _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_periodic));
+                        _shapes.emplace_back(std::make_unique<cylinder_lf<value_type>>(cylinder_periodic));
                     }
                 }
                 //back+right
                 if(is_outside_right == true){
-                    cylinder<value_type> cylinder_periodic(x-dx,y,0,radius,(height+z));
+                    cylinder_lf<value_type> cylinder_periodic(x-dx,y,0,radius,(height+z));
                     check_distance_periodic = collision(_shapes, &cylinder_periodic);
                     if(check_distance_periodic == false){
-                        _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_periodic));
+                        _shapes.emplace_back(std::make_unique<cylinder_lf<value_type>>(cylinder_periodic));
                     }
                 }
                 //back+bottom
                 if(is_outside_bottom == true){
-                    cylinder<value_type> cylinder_periodic(x,y+dy,0,radius,(height+z));
+                    cylinder_lf<value_type> cylinder_periodic(x,y+dy,0,radius,(height+z));
                     check_distance_periodic = collision(_shapes, &cylinder_periodic);
                     if(check_distance_periodic == false){
-                        _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_periodic));
+                        _shapes.emplace_back(std::make_unique<cylinder_lf<value_type>>(cylinder_periodic));
                     }
                 }
                 //back+top
                 if(is_outside_top == true){
-                    cylinder<value_type> cylinder_periodic(x,y-dy,0,radius,(height+z));
+                    cylinder_lf<value_type> cylinder_periodic(x,y-dy,0,radius,(height+z));
                     check_distance_periodic = collision(_shapes, &cylinder_periodic);
                     if(check_distance_periodic == false){
-                        _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_periodic));
+                        _shapes.emplace_back(std::make_unique<cylinder_lf<value_type>>(cylinder_periodic));
                     }
                 }
             }
 
             if(check_distance_periodic == false || is_outside == false){
-                _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_));
+                _shapes.emplace_back(std::make_unique<cylinder_lf<value_type>>(cylinder_));
+                _vol_frac_inclusion += cylinder_.volume();
+            }
+        }
+
+#ifdef RVE_DEBUG
+        std::cout<<"iter "<<iter<<" volume fraction "<<_vol_frac_inclusion<<" error "<<(volume_faction - (_vol_frac_inclusion/(_box[0]*_box[1])))<<std::endl;
+#endif
+
+        if((volume_faction - (_vol_frac_inclusion/(dx*dy))) < 0.005){
+            break;
+        }
+        ++iter;
+    }
+
+    if(iter == _max_iter){
+        throw std::runtime_error("max iterations reached");
+    }
+}
+
+template <typename _Distribution>
+template<typename _Generator>
+constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_sf_periodic(cylinder_sf_input const& __input, _Generator& __random_generator){
+    const value_type minR{__input.get_radius_min()}, maxR{__input.get_radius_max()}, minH{__input.get_height_min()}, maxH{__input.get_height_max()};
+    const value_type volume_faction{__input.get_volume_fraction()};
+    _Distribution dis_radius(minR, maxR);
+    _Distribution dis_height(minH, maxH);
+    _Distribution dis_x(0, _box[0]);
+    _Distribution dis_y(0, _box[1]);
+    _Distribution dis_z(0, _box[2]);
+
+    const value_type dx{_box[0]}, dy{_box[1]}, dz{_box[2]};
+
+    const value_type area{minR*minR*M_PI};
+    const value_type volume {minR*minR*M_PI*minH};
+    const size_type max_cylinders{static_cast<size_type>((dx*dy*dz*volume_faction)/volume)};
+
+    size_type iter{0};
+
+    _shapes.clear();
+    //reserve data for faster push back of new elements
+    _shapes.reserve(max_cylinders);
+
+    _vol_frac_inclusion = 0;
+    while (iter <= _max_iter) {
+        //new cylinder
+        const double radius{dis_radius(__random_generator)};
+        const double height{dis_height(__random_generator)};
+        const auto x{dis_x(__random_generator)};
+        const auto y{dis_y(__random_generator)};
+        const auto z{dis_z(__random_generator)};
+        cylinder_sf<value_type> cylinder_(x, y, z, radius, height);
+
+        bool check_distance_{collision(_shapes, &cylinder_)};
+        if(check_distance_ == false){
+            //check if outside of rve
+            bool check_distance_periodic{true};
+            bool is_outside{false};
+            bool is_outside_left{false};
+            bool is_outside_right{false};
+            bool is_outside_bottom{false};
+            bool is_outside_top{false};
+            //left side
+            if((cylinder_(0)-cylinder_.radius()) < 0){
+                is_outside = true;
+                is_outside_left = true;
+                cylinder_sf<value_type> cylinder_periodic(x+dx,y,z,radius,height);
+                check_distance_periodic = collision(_shapes, &cylinder_periodic);
+                if(check_distance_periodic == false){
+                    _shapes.emplace_back(std::make_unique<cylinder_sf<value_type>>(cylinder_periodic));
+                }
+            }
+            //right side
+            if(cylinder_(0)+cylinder_.radius()>dx){
+                is_outside = true;
+                is_outside_right = true;
+                cylinder_sf<value_type> cylinder_periodic(x-dx,y,z,radius,height);
+                check_distance_periodic = collision(_shapes, &cylinder_periodic);
+                if(check_distance_periodic == false){
+                    _shapes.emplace_back(std::make_unique<cylinder_sf<value_type>>(cylinder_periodic));
+                }
+            }
+            //bottom
+            if(cylinder_(1)-cylinder_.radius()<0){
+                is_outside = true;
+                is_outside_bottom = true;
+                cylinder_sf<value_type> cylinder_periodic(x,y+dy,z,radius,height);
+                check_distance_periodic = collision(_shapes, &cylinder_periodic);
+                if(check_distance_periodic == false){
+                    _shapes.emplace_back(std::make_unique<cylinder_sf<value_type>>(cylinder_periodic));
+                }
+            }
+            //top
+            if(cylinder_(1)+cylinder_.radius()>dy){
+                is_outside = true;
+                bool is_outside_top = true;
+                cylinder_sf<value_type> cylinder_periodic(x,y-dy,z,radius,height);
+                check_distance_periodic = collision(_shapes, &cylinder_periodic);
+                if(check_distance_periodic == false){
+                    _shapes.emplace_back(std::make_unique<cylinder_sf<value_type>>(cylinder_periodic));
+                }
+            }
+
+            //front
+            if(cylinder_(2)+cylinder_.height()>dz){
+                is_outside = true;
+                cylinder_sf<value_type> cylinder_periodic(x,y,0,radius,(height-(dz-z)));
+                check_distance_periodic = collision(_shapes, &cylinder_periodic);
+                if(check_distance_periodic == false){
+                    _shapes.emplace_back(std::make_unique<cylinder_sf<value_type>>(cylinder_periodic));
+                }
+                //front+left
+                if(is_outside_left == true){
+                    cylinder_sf<value_type> cylinder_periodic(x+dx,y,0,radius,(height-(dz-z)));
+                    check_distance_periodic = collision(_shapes, &cylinder_periodic);
+                    if(check_distance_periodic == false){
+                        _shapes.emplace_back(std::make_unique<cylinder_sf<value_type>>(cylinder_periodic));
+                    }
+                }
+                //front+right
+                if(is_outside_right == true){
+                    cylinder_sf<value_type> cylinder_periodic(x-dx,y,0,radius,(height-(dz-z)));
+                    check_distance_periodic = collision(_shapes, &cylinder_periodic);
+                    if(check_distance_periodic == false){
+                        _shapes.emplace_back(std::make_unique<cylinder_sf<value_type>>(cylinder_periodic));
+                    }
+                }
+                //front+bottom
+                if(is_outside_bottom == true){
+                    cylinder_sf<value_type> cylinder_periodic(x,y+dy,0,radius,(height-(dz-z)));
+                    check_distance_periodic = collision(_shapes, &cylinder_periodic);
+                    if(check_distance_periodic == false){
+                        _shapes.emplace_back(std::make_unique<cylinder_sf<value_type>>(cylinder_periodic));
+                    }
+                }
+                //front+top
+                if(is_outside_top == true){
+                    cylinder_sf<value_type> cylinder_periodic(x,y-dy,0,radius,(height-(dz-z)));
+                    check_distance_periodic = collision(_shapes, &cylinder_periodic);
+                    if(check_distance_periodic == false){
+                        _shapes.emplace_back(std::make_unique<cylinder_sf<value_type>>(cylinder_periodic));
+                    }
+                }
+            }
+
+            //back
+            if(cylinder_(2)+cylinder_.height()<0){
+                is_outside = true;
+                cylinder_sf<value_type> cylinder_periodic(x,y,_box[2],radius,(height+z));
+                check_distance_periodic = collision(_shapes, &cylinder_periodic);
+                if(check_distance_periodic == false){
+                    _shapes.emplace_back(std::make_unique<cylinder_sf<value_type>>(cylinder_periodic));
+                }
+                //back+left
+                if(is_outside_left == true){
+                    cylinder_sf<value_type> cylinder_periodic(x+dx,y,0,radius,(height+z));
+                    check_distance_periodic = collision(_shapes, &cylinder_periodic);
+                    if(check_distance_periodic == false){
+                        _shapes.emplace_back(std::make_unique<cylinder_sf<value_type>>(cylinder_periodic));
+                    }
+                }
+                //back+right
+                if(is_outside_right == true){
+                    cylinder_sf<value_type> cylinder_periodic(x-dx,y,0,radius,(height+z));
+                    check_distance_periodic = collision(_shapes, &cylinder_periodic);
+                    if(check_distance_periodic == false){
+                        _shapes.emplace_back(std::make_unique<cylinder_sf<value_type>>(cylinder_periodic));
+                    }
+                }
+                //back+bottom
+                if(is_outside_bottom == true){
+                    cylinder_sf<value_type> cylinder_periodic(x,y+dy,0,radius,(height+z));
+                    check_distance_periodic = collision(_shapes, &cylinder_periodic);
+                    if(check_distance_periodic == false){
+                        _shapes.emplace_back(std::make_unique<cylinder_sf<value_type>>(cylinder_periodic));
+                    }
+                }
+                //back+top
+                if(is_outside_top == true){
+                    cylinder_sf<value_type> cylinder_periodic(x,y-dy,0,radius,(height+z));
+                    check_distance_periodic = collision(_shapes, &cylinder_periodic);
+                    if(check_distance_periodic == false){
+                        _shapes.emplace_back(std::make_unique<cylinder_sf<value_type>>(cylinder_periodic));
+                    }
+                }
+            }
+
+            if(check_distance_periodic == false || is_outside == false){
+                _shapes.emplace_back(std::make_unique<cylinder_sf<value_type>>(cylinder_));
                 _vol_frac_inclusion += cylinder_.volume();
             }
         }
@@ -1688,7 +1978,7 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_ellipse_only_
 
 template <typename _Distribution>
 template<typename _Generator>
-constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_only_inside(cylinder_input const& __input, _Generator& __random_generator){
+constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_lf_only_inside(cylinder_lf_input const& __input, _Generator& __random_generator){
     const value_type minR{__input.get_radius_min()}, maxR{__input.get_radius_max()}, minH{__input.get_height_min()}, maxH{__input.get_height_max()};
     const value_type volume_faction{__input.get_volume_fraction()};
     _Distribution dis_radius(minR, maxR);
@@ -1720,11 +2010,11 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_only
         const auto x{dis_x(__random_generator)};
         const auto y{dis_y(__random_generator)};
         const auto z{dis_z(__random_generator)};
-        cylinder<value_type> cylinder_(x, y, z, radius, height);
+        cylinder_lf<value_type> cylinder_(x, y, z, radius, height);
 
 
         if((!collision(_shapes, &cylinder_)) && (cylinder_.height() + cylinder_(2) < _box[2]) && (cylinder_(2) > 0)){
-            _shapes.emplace_back(std::make_unique<cylinder<value_type>>(cylinder_));
+            _shapes.emplace_back(std::make_unique<cylinder_lf<value_type>>(cylinder_));
             _vol_frac_inclusion += cylinder_.volume();
         }
 
@@ -1745,6 +2035,67 @@ constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_only
         throw std::runtime_error("max iterations reached");
     }
 }
+
+template <typename _Distribution>
+template<typename _Generator>
+constexpr inline auto rve_generator<_Distribution>::compute_single_cylinder_sf_only_inside(cylinder_sf_input const& __input, _Generator& __random_generator){
+    const value_type minR{__input.get_radius_min()}, maxR{__input.get_radius_max()}, minH{__input.get_height_min()}, maxH{__input.get_height_max()};
+    const value_type volume_faction{__input.get_volume_fraction()};
+    _Distribution dis_radius(minR, maxR);
+    _Distribution dis_height(minH, maxH);
+    _Distribution dis_x(maxR, (_box[0] - maxR));
+    _Distribution dis_y(maxR, (_box[1] - maxR));
+    _Distribution dis_z(0, _box[2]);
+
+    const value_type dx{_box[0]}, dy{_box[1]}, dz{_box[2]};
+
+    const value_type area{minR*minR*M_PI};
+    const value_type volume {minR*minR*M_PI*minH};
+    const size_type max_cylinders{static_cast<size_type>((dx*dy*dz*volume_faction)/volume)};
+
+    size_type iter{0};
+
+    bool finished{false};
+
+
+    _shapes.clear();
+    //reserve data for faster push back of new elements
+    _shapes.reserve(max_cylinders);
+    iter = 0;
+    _vol_frac_inclusion = 0;
+    while (iter <= _max_iter) {
+        //new cylinder
+        const double radius{dis_radius(__random_generator)};
+        const double height{dis_height(__random_generator)};
+        const auto x{dis_x(__random_generator)};
+        const auto y{dis_y(__random_generator)};
+        const auto z{dis_z(__random_generator)};
+        cylinder_sf<value_type> cylinder_(x, y, z, radius, height);
+
+
+        if((!collision(_shapes, &cylinder_)) && (cylinder_.height() + cylinder_(2) < _box[2]) && (cylinder_(2) > 0)){
+            _shapes.emplace_back(std::make_unique<cylinder_sf<value_type>>(cylinder_));
+            _vol_frac_inclusion += cylinder_.volume();
+        }
+
+#ifdef RVE_DEBUG
+        std::cout<<"iter "<<iter<<" volume fraction "<<_vol_frac_inclusion<<" error "<<(volume_faction - (_vol_frac_inclusion/(_box[0]*_box[1])))<<std::endl;
+#endif
+
+        if((volume_faction - (_vol_frac_inclusion/(_box[0]*_box[1]))) < 0.005){
+            finished = true;
+            break;
+        }
+
+        ++iter;
+    }
+
+
+    if(iter == _max_iter){
+        throw std::runtime_error("max iterations reached");
+    }
+}
+
 
 template <typename _Distribution>
 template<typename _Generator>

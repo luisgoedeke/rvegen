@@ -99,13 +99,9 @@ public:
         _point[1] = middle_point[1];
     }
 
-    value_type max_expansion()const{
-        if (_width > _height){
-            return _width;
-        }
-        else{
-            return _height;
-        }
+    virtual std::array<T,3> max_expansion()const{
+        value_type max = std::max(_width, _height);
+        return {max, max, 0};
     }
 
 private:
