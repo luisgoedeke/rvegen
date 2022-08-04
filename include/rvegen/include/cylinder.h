@@ -89,10 +89,6 @@ public:
         return _point;
     }
 
-    std::unique_ptr<box_bounding<value_type>> bounding_box(){
-        return this->bounding_box();
-    }
-
     virtual void make_bounding_box() override{
         auto box_ptr = std::make_unique<box_bounding<value_type>>();
         box_ptr.get()->top_point() = {_point[0] + _radius,  _point[1] + _radius, _point[2] + 0.5*_height};
@@ -185,10 +181,6 @@ public:
 
     constexpr inline auto& point(){
         return _point;
-    }
-
-    std::unique_ptr<box_bounding<value_type>> bounding_box(){
-        return this->bounding_box();
     }
 
     virtual void make_bounding_box() override{

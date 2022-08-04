@@ -709,30 +709,30 @@ constexpr inline auto rve_generator<_Distribution>::compute_inclusion_stuff_only
 
     set_sections(AnzahlBereiche, number_of_shapes, sections);
 
-    int AnzahlDurchläufeGesamt = 10;
-    int FehlversucheFrei = 0;
-    int FehlversucheSeitenMax = 10;
-    int FehlversucheFreiMax = 1000;
-    int DurchläufeGravitationMax = 10;
+    int number_of_max_runs = 10;
+    int free_failed_attempts = 0;
+    int free_failed_attempts_side = 10;
+    int free_failed_attempts_max = 1000;
+    int runs_gravity_max = 10;
 
     if (right_size){
         //Durchgänge gesamt
-        for (int i=0;i<AnzahlDurchläufeGesamt;i++){
+        for (int i=0;i<number_of_max_runs;i++){
            //Bereiche
             for (int j=0;j<AnzahlBereiche;j++){
-               fill_sides(_vol_frac_inclusion, max_frac, dimension(), j, FehlversucheSeitenMax, sections, _shapes, _generated_shapes);
-               while ((FehlversucheFrei <= FehlversucheFreiMax) && (_vol_frac_inclusion < max_frac)){
+               fill_sides(_vol_frac_inclusion, max_frac, dimension(), j, free_failed_attempts_side, sections, _shapes, _generated_shapes);
+               while ((free_failed_attempts <= free_failed_attempts_max) && (_vol_frac_inclusion < max_frac)){
                      if (!arrange_next(_vol_frac_inclusion, dimension(), j, sections, _shapes, _generated_shapes)){
-                        FehlversucheFrei++;
+                        free_failed_attempts++;
                     }
                      else{
-                         FehlversucheFrei = 0;
+                         free_failed_attempts = 0;
                      }
                 }
-               FehlversucheFrei = 0;
+               free_failed_attempts = 0;
             }
             if(_vol_frac_inclusion < max_frac){
-                for (int i=0; i<DurchläufeGravitationMax; i++){
+                for (int i=0; i<runs_gravity_max; i++){
                   add_gravity(dimension(),_shapes);
                 }
             }

@@ -130,10 +130,6 @@ public:
         this->_bounding_box = std::move(box_ptr);
     }
 
-    std::unique_ptr<rectangle_bounding<value_type>> bounding_box()const{
-        return this->bounding_box();
-    }
-
     virtual value_type area()const override{
         return _radius_a*_radius_b*M_PI;
     }

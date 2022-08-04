@@ -60,10 +60,6 @@ public:
         return {_radius, _radius, 0};
     }
 
-    std::unique_ptr<rectangle_bounding<value_type>> bounding_box(){
-        return this->bounding_box();
-    }
-
     std::array<T,3> get_middle_point()const override{
         return {_point[0], _point[1], 0};
     }
