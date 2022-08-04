@@ -215,11 +215,14 @@ bool arrange_bottom(int dimension, int section, std::vector<std::pair<int, int>>
 
             bool is_outside = false;
 
+
             for (int i=0; i<3; i++){
                 if(pos_new[i]-max_exp[i] < 0 || pos_new[i]+max_exp[i] > 1){
                     is_outside = true;
                 }
             }
+
+
 
             std::get<1>(sorted_shapes[position])->set_middle_point(pos_new);
 
@@ -657,12 +660,12 @@ void move_geometry(int axis, int dimension, int vector_position, std::vector<std
 
         for (int i=0; i < vector_position; i++){
             //Alle Geometrien finden, die sich "unterhalb" der zu bewegenden Geometrie befinden und diese in den neuen Vektor einordnen, ist derzeit auskommentiert da es zu nicht nachvollziehbaren Kollisionen kam
-//            if(bounding_overlap_check(axis,*static_cast<rectangle_bounding<T>*> (std::get<1>(_shapes_height[i])->bounding_box()), *static_cast<rectangle_bounding<T>*> (std::get<1>(_shapes_height[vector_position])->bounding_box()))){
+            if(bounding_overlap_check(axis,*static_cast<rectangle_bounding<T>*> (std::get<1>(_shapes_height[i])->bounding_box()), *static_cast<rectangle_bounding<T>*> (std::get<1>(_shapes_height[vector_position])->bounding_box()))){
                 shapes_with_overlapping_boxes.emplace_back(std::move(std::get<1>(_shapes_height[i])));
                 _shapes_height.erase(_shapes_height.begin()+i);
                 i--;
                 vector_position--;
-//            }
+            }
         }
     }
 
@@ -672,12 +675,12 @@ void move_geometry(int axis, int dimension, int vector_position, std::vector<std
 
         for (int i=0; i < vector_position; i++){
             //Alle Geometrien finden, die sich "unterhalb" der zu bewegenden Geometrie befinden und diese in den neuen Vektor einordnen, ist derzeit auskommentiert da es zu nicht nachvollziehbaren Kollisionen kam
-//            if(bounding_overlap_check(axis,*static_cast<box_bounding<T>*> (std::get<1>(_shapes_height[i])->bounding_box()), *static_cast<box_bounding<T>*> (std::get<1>(_shapes_height[vector_position])->bounding_box()))){
+            if(bounding_overlap_check(axis,*static_cast<box_bounding<T>*> (std::get<1>(_shapes_height[i])->bounding_box()), *static_cast<box_bounding<T>*> (std::get<1>(_shapes_height[vector_position])->bounding_box()))){
                 shapes_with_overlapping_boxes.emplace_back(std::move(std::get<1>(_shapes_height[i])));
                 _shapes_height.erase(_shapes_height.begin()+i);
                 i--;
                 vector_position--;
-//            }
+            }
         }
     }
 
@@ -711,7 +714,24 @@ void move_geometry(int axis, int dimension, int vector_position, std::vector<std
 
 
                 current_position[axis] = height_new;
+/*
+                for (int i=0; i < vector_position; i++){
+                    //Alle Geometrien finden, die sich "unterhalb" der zu bewegenden Geometrie befinden und diese in den neuen Vektor einordnen, ist derzeit auskommentiert da es zu nicht nachvollziehbaren Kollisionen kam
+//                    if(bounding_overlap_check(axis,*static_cast<rectangle_bounding<T>*> (std::get<1>(_shapes_height[i])->bounding_box()), *static_cast<rectangle_bounding<T>*> (std::get<1>(_shapes_height[vector_position])->bounding_box()))){
+                        shapes_with_overlapping_boxes.emplace_back(std::move(std::get<1>(_shapes_height[i])));
+                        _shapes_height.erase(_shapes_height.begin()+i);
+                        i--;
+                        vector_position--;
+                    }
 
+                for (int i=_shapes_height.size()-1; i > vector_position; i--){
+                //Alle Geometrien finden, die sich "unterhalb" der zu bewegenden Geometrie befinden und diese in den neuen Vektor einordnen, ist derzeit auskommentiert da es zu nicht nachvollziehbaren Kollisionen kam
+//                    if(bounding_overlap_check(axis,*static_cast<rectangle_bounding<T>*> (std::get<1>(_shapes_height[i])->bounding_box()), *static_cast<rectangle_bounding<T>*> (std::get<1>(_shapes_height[vector_position])->bounding_box()))){
+                    shapes_with_overlapping_boxes.emplace_back(std::move(std::get<1>(_shapes_height[i])));
+                    _shapes_height.erase(_shapes_height.begin()+i);
+
+                }
+*/
                 //OnlyInside
                 if((current_position[axis]-expansion_max[axis])>0 && (current_position[axis]-expansion_max[axis])<1)  {
                   std::get<1>(_shapes_height[vector_position])->set_middle_point(current_position);
@@ -737,6 +757,7 @@ void move_geometry(int axis, int dimension, int vector_position, std::vector<std
                 value_type height_new = distribution();
                 current_position[axis] = std::min(height_old, height_new);
                 std::get<1>(_shapes_height[vector_position])->set_middle_point(current_position);
+                std::get<1>(_shapes_height[vector_position])->make_bounding_box();
                 attempts++;
             }
         }

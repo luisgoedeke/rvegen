@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <string>
 
 #include "circle.h"
 #include "ellipse.h"
@@ -24,7 +25,7 @@ public:
     write_gmsh_geo() {}
 
     template<typename _RVE>
-    inline void write_file(std::fstream & __file, _RVE const& __rve, double time){
+    inline void write_file(std::fstream & __file, _RVE const& __rve, std::string time){
         const auto dimension{__rve.dimension()};
         if(dimension == 2){
             write_file_2D(__file, __rve, time);
@@ -70,17 +71,17 @@ private:
     }
 
     template<typename _RVE>
-    inline void write_file_2D(std::fstream & __file, _RVE const& __rve, double time){
+    inline void write_file_2D(std::fstream & __file, _RVE const& __rve, std::string time){
         const auto [x_box, y_box, z_box]{__rve.box()};
         const auto& shapes{__rve.shapes()};
 
         __file<<"//Number of shapes: "<<__rve.get_number_of_shapes()<<std::endl;
         __file<<"//Volume fraction: "<<__rve.get_vol_frac_inclusion()<<std::endl;
-        __file<<"//Runtime: "<<time<<"ms" <<std::endl;
+        __file<<"//Runtime: "<<time<<std::endl;
 
         std::cout<<"Number of shapes: "<<__rve.get_number_of_shapes()<<std::endl;
         std::cout<<"Volume fraction: "<<__rve.get_vol_frac_inclusion()<<std::endl;
-        std::cout<<"Runtime: "<<time<<"ms" <<std::endl;
+        std::cout<<"Runtime: "<<time <<std::endl;
 
 
         __file<<"SetFactory(\"OpenCASCADE\");"<<std::endl;
@@ -157,17 +158,17 @@ private:
     }
 
     template<typename _RVE>
-    inline void write_file_3D(std::fstream & __file, _RVE const& __rve, double time){
+    inline void write_file_3D(std::fstream & __file, _RVE const& __rve, std::string time){
         const auto [x_box, y_box, z_box]{__rve.box()};
         const auto& shapes{__rve.shapes()};
 
         __file<<"//Number of shapes: "<<__rve.get_number_of_shapes()<<std::endl;
         __file<<"//Volume fraction: "<<__rve.get_vol_frac_inclusion()<<std::endl;
-        __file<<"//Runtime: "<<time<<"ms" <<std::endl;
+        __file<<"//Runtime: "<<time <<std::endl;
 
         std::cout<<"Number of shapes: "<<__rve.get_number_of_shapes()<<std::endl;
         std::cout<<"Volume fraction: "<<__rve.get_vol_frac_inclusion()<<std::endl;
-        std::cout<<"Runtime: "<<time<<"ms" <<std::endl;
+        std::cout<<"Runtime: "<<time<<std::endl;
 
         __file<<"SetFactory(\"OpenCASCADE\");"<<std::endl;
         __file<<"Mesh.CharacteristicLengthMin = 0;"<<std::endl;
@@ -214,3 +215,5 @@ private:
 }
 
 #endif // WRITE_GMSH_GEO_H
+
+
