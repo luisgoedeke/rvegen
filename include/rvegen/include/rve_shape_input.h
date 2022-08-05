@@ -670,10 +670,14 @@ public:
         _max_rotation_y(),
         _min_rotation_z(),
         _max_rotation_z()
-
     {}
 
-    ellipsoid_input(bool const __random_position, bool const __random_radius, value_type const _min_radius_a, value_type const _max_radius_a, value_type const _min_radius_b, value_type const _max_radius_b, value_type const _min_radius_c, value_type const _max_radius_c, value_type const _min_rotation_x, value_type const _max_rotation_x, value_type const _min_rotation_y, value_type const _max_rotation_y, value_type const _min_rotation_z, value_type const _max_rotation_z,  value_type const __volume_fraction, const int __number_of_shapes):
+    ellipsoid_input(bool const __random_position, bool const __random_radius,
+                    value_type const _min_radius_a, value_type const _max_radius_a, value_type const _min_radius_b,
+                    value_type const _max_radius_b, value_type const _min_radius_c, value_type const _max_radius_c,
+                    value_type const _min_rotation_x, value_type const _max_rotation_x, value_type const _min_rotation_y,
+                    value_type const _max_rotation_y, value_type const _min_rotation_z, value_type const _max_rotation_z,
+                    value_type const __volume_fraction, const int __number_of_shapes):
         rve_shape_input(__volume_fraction, __number_of_shapes, __random_position),
         _random_radius(__random_radius),
         _min_radius_a(_min_radius_a),
