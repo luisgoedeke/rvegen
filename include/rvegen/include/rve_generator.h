@@ -46,7 +46,7 @@ public:
     using size_type = std::size_t;
 
 
-    rve_generator(rveType const __rve_type = rveType::Random, std::size_t const __dimension = 3, value_type const _x = 1, value_type const _y = 1, value_type const _z = 1):
+    rve_generator(rveType const __rve_type = rveType::Random, std::size_t const __dimension = 2, value_type const _x = 1, value_type const _y = 1, value_type const _z = 1):
         _rve_type(__rve_type),
         _dim(__dimension),
         _max_iter(50000),
@@ -708,6 +708,7 @@ constexpr inline auto rve_generator<_Distribution>::compute_inclusion_stuff_only
     bool right_size = check_size(AnzahlBereiche, _generated_shapes);
 
     set_sections(AnzahlBereiche, number_of_shapes, sections);
+
 
     int number_of_max_runs = 10;
     int free_failed_attempts = 0;
